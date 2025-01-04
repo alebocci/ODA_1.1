@@ -24,7 +24,7 @@ document.getElementById('uploadInputSchema').onsubmit = function(event) {
             inputJsonStructure = data.jsonStructure;
             // genero il codice necesssario per modificare i campi del json
             const editor = document.getElementById('inputJsonStructure');
-            editor.innerHTML = generateInputJsonEditorHTML(inputJsonStructure);
+            editor.innerHTML = generateInputSchemaEditor(inputJsonStructure);
             // mostro l'editor altrimenti nascosto
             document.getElementById('inputJsonEditor').style.display = 'block';
             document.getElementById('inputJsonEditor').classList.remove('hidden');
@@ -62,7 +62,7 @@ document.getElementById("uploadDestSchema").onsubmit = function(event) {
             // Usa la struttura JSON per visualizzare il risultato
             const destJsonStructure = data.jsonStructure;
             const editor = document.getElementById('destJsonStructure');
-            editor.innerHTML = generateDestCardHTML(destJsonStructure);
+            editor.innerHTML = generateDestDroppableCard(destJsonStructure);
             // mostro l'editor altrimenti nascosto
             document.getElementById('destJsonEditor').style.display = 'block';
             document.getElementById('destJsonEditor').classList.remove('hidden');
@@ -116,7 +116,7 @@ function closeMessage(messageId) {
 
 
 // funzione per generare il codice necessario per modificare i campi dello schema di input
-function generateInputJsonEditorHTML(jsonStructure, parentKey = '') {
+function generateInputSchemaEditor(jsonStructure, parentKey = '') {
     let html = '';
     for (let key in jsonStructure) {
         const currentKey = parentKey ? `${parentKey}.${key}` : key;
@@ -135,7 +135,7 @@ function generateInputJsonEditorHTML(jsonStructure, parentKey = '') {
                 const arrayItemKey = `${currentKey}[${index}]`;
                 if (typeof item === 'object' && item !== null) {
                     // Se l'elemento dell'array è un oggetto, chiamata ricorsiva
-                    html += generateInputJsonEditorHTML(item, arrayItemKey);
+                    html += generateInputSchemaEditor(item, arrayItemKey);
                 } else {
                     // Se l'elemento dell'array è un valore primitivo
                     html += `
@@ -154,7 +154,7 @@ function generateInputJsonEditorHTML(jsonStructure, parentKey = '') {
                     <button class="remove-button btn btn-danger btn-sm" onclick="removeInputSchemaElement('${currentKey}')">Elimina</button>
                 </div>
                 <div class="nested-items">
-                    ${generateInputJsonEditorHTML(value, currentKey)}
+                    ${generateInputSchemaEditor(value, currentKey)}
                 </div>
             `;
         } else {
@@ -180,8 +180,8 @@ function removeInputSchemaElement(uniqueId) {
 }
 
 
-// Funzione per generare il codice necessario per creare le card dei campi dello schema di destinazione
-function generateDestCardHTML(destJsonStructure) {
+// Funzione per generare il codice necessario per creare le card dei campi a seconda dello schema di destinazione (per ora solo POLIMI)
+function generateDestDroppableCard(destJsonStructure) {
     let html = '';
     // Iteriamo su ogni chiave della struttura del JSON di destinazione
     for (let key in destJsonStructure) {
@@ -227,12 +227,6 @@ function drag(ev) {
 }
 
 
-// Permette di trascinare sopra una zona
-function allowDrop(ev) {
-    ev.preventDefault();
-}
-
-
 // Funzione per gestire il drop
 function drop(ev) {
     ev.preventDefault();
@@ -252,7 +246,7 @@ function drop(ev) {
             // Aggiungi un pulsante per il ripristino
             if (!draggedElement.querySelector(".restore-button")) {
                 const restoreButton = document.createElement("button");
-                restoreButton.textContent = "Ripristina";
+                restoreButton.textContent = "Indietro";
                 restoreButton.className = "restore-button btn btn-secondary btn-sm ms-2";
                 restoreButton.onclick = () => restoreToOrigin(draggedElement, ev.target.id);
                 draggedElement.appendChild(restoreButton);
@@ -265,6 +259,8 @@ function drop(ev) {
             }
             // Regola l'altezza della dropzone
             adjustDropzoneHeight(ev.target);
+            // aggiunge il bottone per il mapping
+            document.getElementById('mapButton').classList.remove('hidden');
         }
     } else if (ev.target.classList.contains("dropzone") && !ev.target.contains(draggedElement)) {
         // Se l'elemento è droppato in un'altra dropzone (non quella degli attributi), non aggiungere valore e unità
@@ -288,6 +284,8 @@ function drop(ev) {
        
         // Regola l'altezza della dropzone
         adjustDropzoneHeight(ev.target);
+        // aggiunge il bottone per il mapping
+        document.getElementById('mapButton').classList.remove('hidden');
     }
 }
 
@@ -316,7 +314,8 @@ function addValueAndUnitInput(draggedElement) {
 function restoreToOrigin(element, idDropzone) {
     const originSection = document.getElementById("inputJsonStructure");
     const restoreButton = element.querySelector(".restore-button");
-
+    const dropzones = document.querySelectorAll('[id^="dropzone"]');
+    
     // Rimuoviamo il pulsante di ripristino
     if (restoreButton) {
         restoreButton.remove();
@@ -336,6 +335,18 @@ function restoreToOrigin(element, idDropzone) {
     // Aggiungi il bottone di eliminazione all'elemento ripristinato
     element.appendChild(deleteButton);
     adjustDropzoneHeight(document.getElementById(idDropzone));
+    // Nascondi il mapButton se tutte le dropzone sono vuote
+    let allDropzonesEmpty = true;
+    for (const dropzone of dropzones) {
+        if (dropzone.childElementCount > 0) {
+            allDropzonesEmpty = false;
+            break;
+        }
+    }
+    if (allDropzonesEmpty) {
+        document.getElementById('mapButton').classList.add('hidden');
+    }
+
 }
 
 
@@ -348,3 +359,6 @@ function adjustDropzoneHeight(dropzone) {
     dropzone.style.overflowY = "auto";
 }
 
+// TODO: far sparire i form di inderimento una volta caricati gli editor
+// TODO: gestione dei campi unità e valore e quali campi non possono essere vuoti
+// TODO: interazione con backend per generare la funzione che esegue la trasformazione a partire dal mapping generato dall'utente
