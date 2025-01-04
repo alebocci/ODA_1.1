@@ -1,4 +1,4 @@
-from flask import Flask, request, make_response, jsonify
+from flask import Flask, redirect, request, make_response, jsonify
 import logging, sys, os, requests, json
 from requests.exceptions import HTTPError
 
@@ -12,6 +12,9 @@ KAFKA_URL = KAFKA_ADDRESS+":"+KAFKA_PORT
 
 TOPIC_MANAGER_PORT= os.environ["TOPIC_MANAGER_PORT"]
 TOPIC_MANAGER_URL = "http://topicmanager:"+TOPIC_MANAGER_PORT
+
+DATA_TRANSFORMER_PORT= os.environ["DATA_TRANSFORMER_PORT"]
+DATA_TRANSFORMER_URL = "http://127.0.0.1:"+DATA_TRANSFORMER_PORT
 
 app = Flask(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -93,3 +96,7 @@ def register_dg():
     except Exception as e:
         app.logger.error(repr(e))
         return make_response(repr(e), 500)
+
+@app.route("/register/dt", methods=["GET"])
+def register_dt():
+    return redirect(DATA_TRANSFORMER_URL)

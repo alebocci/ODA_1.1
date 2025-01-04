@@ -1,0 +1,11 @@
+{
+    "timestamp": "integer", 
+    "generator_id": "string", 
+    "topic": "string", 
+    "data": {
+        "attribute_name": {
+            "value": "any",
+            "unit": "string or null"
+        }
+    }
+}

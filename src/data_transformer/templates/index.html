@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schema Mapping App</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <div class="container">
+    <!-- metà dello schema di partenza -->
+    <div class="half">
+      <!-- Mensaggi di errore e successo -->
+      <div id="errorMessageInput" class="alert alert-danger d-flex justify-content-between align-items-center" style="display: none !important;">
+        <strong>Errore!</strong> <span id="errorTextInput"></span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('errorMessageInput')"></button>
+      </div>
+      <div id="successMessageInput" class="alert alert-success d-flex justify-content-between align-items-center" style="display: none !important;">
+        <strong>Successo!</strong> <span id="successTextInput"></span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('successMessageInput')"></button>
+      </div>
+      <div class="card shadow-lg">
+        <div class="card-header text-center">
+            <h1>Carica lo schema di partenza</h1>
+        </div>
+        <div class="card-body">
+            <form id="uploadInputSchema" enctype="multipart/form-data">
+                <div class="mb-4">
+                    <input type="file" class="form-control" id="inputSchema" name="inputSchema" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Carica</button>
+            </form>
+        </div>
+      </div>
+      <!-- Editor per lo schema di input-->
+      <div id="inputJsonEditor" class="mt-4 mb-4" style="display:none;">
+        <div class="card shadow-lg">
+            <div class="card-header">
+                <h2>Mappa i campi di partenza in quelli destinazione</h2>
+            </div>
+            <div class="card-body">
+                <div id="inputJsonStructure"></div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <!-- metà dello schema di destinazione -->
+    <div class="half">
+      <!-- Mensaggi di errore e successo -->
+      <div id="errorMessageDest" class="alert alert-danger d-flex justify-content-between align-items-center" style="display: none !important;">
+        <strong>Errore!</strong> <span id="errorTextDest"></span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('errorMessageDest')"></button>
+      </div>
+      <div id="successMessageDest" class="alert alert-success d-flex justify-content-between align-items-center" style="display: none !important;">
+        <strong>Successo!</strong> <span id="successTextDest"></span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('successMessageDest')"></button>
+      </div>
+      <div class="card shadow-lg">
+        <div class="card-header text-center">
+            <h1>scegli lo schema di destinazione</h1>
+        </div>
+        <div class="card-body">
+            <form id="uploadDestSchema" enctype="multipart/form-data">
+                <div class="mb-4">
+                  <select class="form-select" id="destSchema" name="destSchema" aria-label="Default select example">
+                    <option >Scegli tra i formati di destinazione</option>
+                    <option value="POLIMI">POLIMI</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Seleziona</button>
+            </form>
+        </div>
+      </div>
+      <!-- Editor per lo schema destinazione-->
+      <div id="destJsonEditor" class="mt-4 mb-4" style="display:none;">
+        <div class="card shadow-lg">
+            <div class="card-header">
+                <h2>Mappa i campi di partenza in quelli destinazione</h2>
+            </div>
+            <div class="card-body">
+                <!-- Qui verranno inserite dinamicamente le card con le informazioni dello schema destinazione -->
+                <div id="destJsonStructure"></div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

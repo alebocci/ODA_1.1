@@ -2,3 +2,6 @@
 *.gzip
 *Zone.Identifier
 .vscode
+# Ignora i file __pycache__
+__pycache__/
+*.pyc
