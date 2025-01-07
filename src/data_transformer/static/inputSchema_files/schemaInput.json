@@ -1,15 +1,10 @@
 {
-    "timestamp": "string", 
-    "generatorId": "string", 
-    "topic": "string", 
-    "buildingId": "string", 
-    "nOfFloors": "integer", 
-    "buildingName": "string", 
-    "area": "float",
-    "electricConsumption": "float",
-    "period": {
-            "start_ts": "string",
-            "end_ts": "string"
-        }
-}
+    "timestamp": "orario della generazione del dato aa:mm:gg", 
+    "generatorId": "nome del sensore", 
+    "topic": "cosa misura il sensore", 
+    "buildingId": "identificatore edificio", 
+    "buildingName": "nome edificio", 
+    "area": "area edificio",
+    "electricConsumption": "consumo edificio"
+  }
 

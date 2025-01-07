@@ -67,6 +67,7 @@
                   <select class="form-select" id="destSchema" name="destSchema" aria-label="Default select example">
                     <option >Scegli tra i formati di destinazione</option>
                     <option value="POLIMI">POLIMI</option>
+                    <option value="FILE">Inserisci il file json</option>
                   </select>
                 </div>
                 <button type="submit" class="btn btn-primary">Seleziona</button>
@@ -88,8 +89,9 @@
     </div>
   </div>
   <div class="text-center">
-    <button id="mapButton" class="btn btn-primary mb-3 hidden">Crea la funzione di mapping</button>
+    <button id="mapButton" class="btn btn-primary mb-3 hidden" onclick="collectMapping()">Crea la funzione di mapping</button>
   </div>
+  <pre id="mappingFunctionContainer" class="prettify mt-4 hidden"></pre>
   
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>

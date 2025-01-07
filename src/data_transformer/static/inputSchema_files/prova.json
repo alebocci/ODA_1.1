@@ -1,0 +1,11 @@
+{
+    "timestamp": "oggi", 
+    "generatorId": "generatoreDiProva", 
+    "topic": "prova", 
+    "data": {
+    	"buildingId": {
+    		"value": "1234",
+    		"unit": "None"
+    		}
+    	}
+}

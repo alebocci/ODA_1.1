@@ -62,7 +62,7 @@ document.getElementById("uploadDestSchema").onsubmit = function(event) {
             // Usa la struttura JSON per visualizzare il risultato
             const destJsonStructure = data.jsonStructure;
             const editor = document.getElementById('destJsonStructure');
-            editor.innerHTML = generateDestDroppableCard(destJsonStructure);
+            editor.innerHTML = generateDestDroppableCardPOLIMI(destJsonStructure);
             // mostro l'editor altrimenti nascosto
             document.getElementById('destJsonEditor').style.display = 'block';
             document.getElementById('destJsonEditor').classList.remove('hidden');
@@ -181,7 +181,7 @@ function removeInputSchemaElement(uniqueId) {
 
 
 // Funzione per generare il codice necessario per creare le card dei campi a seconda dello schema di destinazione (per ora solo POLIMI)
-function generateDestDroppableCard(destJsonStructure) {
+function generateDestDroppableCardPOLIMI(destJsonStructure) {
     let html = '';
     // Iteriamo su ogni chiave della struttura del JSON di destinazione
     for (let key in destJsonStructure) {
@@ -190,7 +190,7 @@ function generateDestDroppableCard(destJsonStructure) {
             html += `
                 <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-attributes">
                     <div class="card-header text-white">
-                        <p class="card-title">Attributi</p>
+                        <p class="card-title">Data</p>
                     </div>
                     <div class="card-body">
                         <div class="dropzone" id="dropzone-attributes" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
@@ -232,17 +232,16 @@ function drop(ev) {
     ev.preventDefault();
     const data = ev.dataTransfer.getData("text");
     const draggedElement = document.getElementById(data);
-
     // Verifica se l'elemento è stato droppato nella dropzone degli attributi
-    if (ev.target.classList.contains("dropzone") && ev.target.id === "dropzone-attributes") {
+    if (ev.target.classList.contains("dropzone")) {
         // Verifica se l'elemento è già nella dropzone
         if (!ev.target.contains(draggedElement)) {
             // Aggiungi l'elemento alla dropzone degli attributi
             ev.target.appendChild(draggedElement);
-
             // Aggiungi i campi per valore e unità di misura solo se è la dropzone degli attributi
-            addValueAndUnitInput(draggedElement);
-
+            if(ev.target.id === "dropzone-attributes") {
+                addUnitInput(draggedElement);
+            }
             // Aggiungi un pulsante per il ripristino
             if (!draggedElement.querySelector(".restore-button")) {
                 const restoreButton = document.createElement("button");
@@ -251,62 +250,29 @@ function drop(ev) {
                 restoreButton.onclick = () => restoreToOrigin(draggedElement, ev.target.id);
                 draggedElement.appendChild(restoreButton);
             }
-
             // Rimuovi il bottone di eliminazione se esiste
             const deleteButton = draggedElement.querySelector(".remove-button");
             if (deleteButton) {
-                deleteButton.remove();  // Rimuovi il bottone di eliminazione
+                deleteButton.remove();
             }
             // Regola l'altezza della dropzone
             adjustDropzoneHeight(ev.target);
             // aggiunge il bottone per il mapping
             document.getElementById('mapButton').classList.remove('hidden');
         }
-    } else if (ev.target.classList.contains("dropzone") && !ev.target.contains(draggedElement)) {
-        // Se l'elemento è droppato in un'altra dropzone (non quella degli attributi), non aggiungere valore e unità
-        ev.target.appendChild(draggedElement);
-
-        // Aggiungi un pulsante per il ripristino
-        if (!draggedElement.querySelector(".restore-button")) {
-            const restoreButton = document.createElement("button");
-            restoreButton.textContent = "Indietro";
-            restoreButton.className = "restore-button btn btn-secondary btn-sm ms-2";
-            restoreButton.onclick = () => restoreToOrigin(draggedElement, ev.target.id);
-            draggedElement.appendChild(restoreButton);
-        }
-
-        // Rimuovi il bottone di eliminazione se esiste
-        const deleteButton = draggedElement.querySelector(".remove-button");
-        if (deleteButton) {
-            deleteButton.remove();  // Rimuovi il bottone di eliminazione
-        }
-
-       
-        // Regola l'altezza della dropzone
-        adjustDropzoneHeight(ev.target);
-        // aggiunge il bottone per il mapping
-        document.getElementById('mapButton').classList.remove('hidden');
     }
 }
 
 
 // Funzione per aggiungere i campi di valore e unità di misura
-function addValueAndUnitInput(draggedElement) {
-    const valueInputContainer = document.createElement("div");
-    valueInputContainer.classList.add("d-flex", "align-items-center", "mt-2");
-
-    const valueInput = document.createElement("input");
-    valueInput.classList.add("form-control", "me-2");
-    valueInput.placeholder = "Inserisci valore";
-
+function addUnitInput(draggedElement) {
+    const inputContainer = document.createElement("div");
+    inputContainer.classList.add("d-flex", "align-items-center", "mt-2");
     const unitInput = document.createElement("input");
     unitInput.classList.add("form-control", "me-2");
     unitInput.placeholder = "Inserisci unità";
-
-    valueInputContainer.appendChild(valueInput);
-    valueInputContainer.appendChild(unitInput);
-
-    draggedElement.appendChild(valueInputContainer);
+    inputContainer.appendChild(unitInput);
+    draggedElement.appendChild(inputContainer);
 }
 
 
@@ -346,7 +312,6 @@ function restoreToOrigin(element, idDropzone) {
     if (allDropzonesEmpty) {
         document.getElementById('mapButton').classList.add('hidden');
     }
-
 }
 
 
@@ -359,6 +324,64 @@ function adjustDropzoneHeight(dropzone) {
     dropzone.style.overflowY = "auto";
 }
 
-// TODO: far sparire i form di inderimento una volta caricati gli editor
-// TODO: gestione dei campi unità e valore e quali campi non possono essere vuoti
-// TODO: interazione con backend per generare la funzione che esegue la trasformazione a partire dal mapping generato dall'utente
+
+// Funzione per raccogliere il mapping e inviarlo al backend
+document.getElementById('mapButton').onclick = function(event) {
+    event.preventDefault();
+
+    // Raccolta dei dati mappati
+    const dropzones = document.querySelectorAll('[id^="dropzone"]');
+    const mappingData = {};
+
+    dropzones.forEach(dropzone => {
+        const dropzoneId = dropzone.id.replace('dropzone-', '');
+    
+        // Se la dropzone è "attributes", dobbiamo accumulare gli attributi in un array
+        if (dropzoneId === 'attributes') {
+            mappingData[dropzoneId] = []; // Inizializziamo un array per gli attributi
+            const children = dropzone.children;
+            for (const child of children) {
+                const key = child.dataset.key;
+                const unitInput = child.querySelector('input[placeholder="Inserisci unità"]');
+                // Aggiungiamo ogni attributo come oggetto con key, value e unit
+                if (key) {
+                    mappingData[dropzoneId].push({
+                        key: key,
+                        value: inputJsonStructure[key],
+                        unit: unitInput.value ? unitInput.value : "None"
+                    });
+                }
+            }
+        } else {
+            // Per altri dropzoneId, memorizziamo semplicemente il valore (chiave) come stringa
+            const children = dropzone.children;
+            for (const child of children) {
+                const key = child.dataset.key;
+                if (key) {
+                    mappingData[dropzoneId] = key;
+                }
+            }
+        }
+    });
+    // Invia il mapping al backend
+    fetch('/generateMappingFunction', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(mappingData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(`Errore: ${data.error}`);
+        } else {
+            // Visualizza la funzione di mapping nel frontend
+            document.getElementById('mappingFunctionContainer').textContent = data.mappingFunction;
+            mappingFunctionContainer.style.display = 'block';
+            document.getElementById('mappingFunctionContainer').classList.remove('hidden');
+            document.getElementById('mappingFunctionContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+    })
+    .catch(error => console.error('Errore:', error));
+};

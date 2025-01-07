@@ -1,0 +1,11 @@
+{
+    "nome": "Mario",
+    "eta": 30,
+    "indirizzo": {
+        "via": "Via Roma",
+        "città": "Roma"
+    },
+    "telefono": "1234567890"
+    "email": "mario@example.com"
+}
+

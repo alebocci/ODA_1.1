@@ -62,7 +62,7 @@ def uploadInputSchema():
         # se ci sono errori restituisco un messaggio di errore
         return jsonify({'error': f"Errore durante il caricamento del file JSON: {e}"}), 500
 
-
+# endpoint per il caricamento del file JSON con lo schema di arrivo e ritornare la struttura di POLIMI al frontend
 @app.route('/uploadDestSchema', methods=['POST'])
 def uploadDestSchema():
     try:
@@ -75,7 +75,53 @@ def uploadDestSchema():
         # Schema POLIMI
         jsonStructure = SCHEMA[selectedSchema]
         return jsonify({'jsonStructure': jsonStructure})
-
     except Exception as e:
         # Se c'è un errore restituiamo un messaggio di errore
         return jsonify({'error': str(e)}), 500
+    
+# endpoint per la generazione della funzione di mapping 
+@app.route('/generateMappingFunction', methods=['POST'])
+def generateMappingFunction():
+    try:
+        # Ottieni i dati inviati dal frontend
+        mappingData = request.get_json()
+        # Genera il codice della funzione di mapping
+        functionLines = []
+        functionLines.append("def mappingFunction(inputData):")
+        functionLines.append("    mappedData = {}")
+
+        for key, items in mappingData.items():
+            if key == "attributes":
+                functionLines.append("    mappedData['data'] = {}")
+                for attribute in items:
+                    # attribute[key] -> percorso dell'attributo nel JSON di partenza
+                    if len(attribute['key'].split('.')) == 1:
+                        # Aggiungiamo la riga per ciascun attributo
+                        functionLines.append(
+                            f"    mappedData['data']['{attribute['key']}'] = {{'value': inputData['{attribute['key']}'], 'unit': '{attribute['unit']}'}}"
+                        )
+                    else:
+                        # Per gli attributi nidificati
+                        keyArray = attribute['key'].split('.')
+                        inputPath = "inputData" 
+                        for keyPart in keyArray:
+                            if "[" in keyPart and "]" in keyPart: 
+                                arrayName, index = keyPart.split("[")
+                                index = index.replace("]", "")
+                                inputPath += f"['{arrayName}'][{index}]"
+                            else:
+                                inputPath += f"['{keyPart}']"
+                        # Aggiungiamo la riga per l'attributo nidificato o array
+                        functionLines.append(
+                            f"    mappedData['data']['{keyArray[-1]}'] = {{'value': {inputPath}, 'unit': '{attribute['unit']}'}}"
+                        )
+            else:
+                functionLines.append(f"    mappedData['{key}'] = inputData.get('{items}')")
+        functionLines.append("    return mappedData")
+        # Unisci il codice in un'unica stringa
+        mappingFunction = "\n".join(functionLines)
+        # Restituisci la funzione di mapping al frontend
+        return jsonify({'mappingFunction': mappingFunction}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({'error': f"Errore durante la generazione della funzione di mapping: {str(e)}"}), 500

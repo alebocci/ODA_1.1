@@ -46,6 +46,19 @@ h1, h2 {
     margin-top: 20px;
 }
 
+.prettify{
+    background-color: #272c36;
+    color: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    font-family: 'Courier New', Courier, monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin-top: 20px;
+    margin-left: 360px;
+    margin-right: 360px;
+}
+
 .form-control {
     border-radius: 10px;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
