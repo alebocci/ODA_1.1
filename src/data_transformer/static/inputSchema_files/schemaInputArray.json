@@ -2,7 +2,7 @@
     "timestamp": "string", 
     "generatorId": "string", 
     "topic": "string", 
-    "data": {
+    "att": {
         "buildingId": "string", 
         "nOfFloors": "integer", 
         "buildingName": "string", 

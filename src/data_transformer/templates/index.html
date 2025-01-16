@@ -8,19 +8,50 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-
+  <!-- Contenitore principale -->
   <div class="container">
+    <!-- Modal per mostrare lo schema delle strutture caricate -->
+    <div class="modal fade" id="autoHideModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content card">
+          <div class="modal-header card-header">
+            <h5 class="modal-title" id="modalTitle"></h5>
+          </div>
+          <div class="modal-body" id="modalText">
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal per inserire i campi mancanti -->
+    <div class="modal fade" id="missingFieldsModal" tabindex="-1" aria-labelledby="missingFieldsModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content card">
+          <div class="modal-header card-header">
+            <h5 class="modal-title" id="missingFieldsModalLabel">Campi mancanti</h5>
+          </div>
+          <div class="modal-body" id="missingFieldsModalText">
+            
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            <button type="button" class="btn btn-success" id="missingFieldsModalButton">Inserisci</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- metà dello schema di partenza -->
     <div class="half">
-      <!-- Mensaggi di errore e successo -->
+      <!-- Mensaggi di errore -->
       <div id="errorMessageInput" class="alert alert-danger d-flex justify-content-between align-items-center" style="display: none !important;">
         <strong>Errore!</strong> <span id="errorTextInput"></span>
         <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('errorMessageInput')"></button>
       </div>
+      <!-- Mensaggi di successo -->
       <div id="successMessageInput" class="alert alert-success d-flex justify-content-between align-items-center" style="display: none !important;">
         <strong>Successo!</strong> <span id="successTextInput"></span>
         <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('successMessageInput')"></button>
       </div>
+      <!-- Container del Form per caricare lo schema di input-->
       <div class="card shadow-lg">
         <div class="card-header text-center">
             <h1>Carica lo schema di partenza</h1>
@@ -34,7 +65,7 @@
             </form>
         </div>
       </div>
-      <!-- Editor per lo schema di input-->
+      <!-- Parser per lo schema di input-->
       <div id="inputJsonEditor" class="mt-4 mb-4" style="display:none;">
         <div class="card shadow-lg">
             <div class="card-header">
@@ -48,33 +79,36 @@
     </div>
     <!-- metà dello schema di destinazione -->
     <div class="half">
-      <!-- Mensaggi di errore e successo -->
+      <!-- Mensaggi di errore -->
       <div id="errorMessageDest" class="alert alert-danger d-flex justify-content-between align-items-center" style="display: none !important;">
         <strong>Errore!</strong> <span id="errorTextDest"></span>
         <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('errorMessageDest')"></button>
       </div>
+      <!-- Mensaggi di successo -->
       <div id="successMessageDest" class="alert alert-success d-flex justify-content-between align-items-center" style="display: none !important;">
         <strong>Successo!</strong> <span id="successTextDest"></span>
         <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('successMessageDest')"></button>
       </div>
+      <!-- Container del Form per scegliere lo schema di destinazione-->
       <div class="card shadow-lg">
         <div class="card-header text-center">
             <h1>scegli lo schema di destinazione</h1>
         </div>
         <div class="card-body">
             <form id="uploadDestSchema" enctype="multipart/form-data">
-                <div class="mb-4">
+                <div class="mb-4" id="destSchemaSelect">
                   <select class="form-select" id="destSchema" name="destSchema" aria-label="Default select example">
-                    <option >Scegli tra i formati di destinazione</option>
+                    <option value="Scegli lo schema di destinazione">Seleziona uno schema o inserisci il tuo schema json</option>
                     <option value="POLIMI">POLIMI</option>
-                    <option value="FILE">Inserisci il file json</option>
+                    <!--<option value="SCP">SCP</option>
+                    <option value="FILE">Inserisci il file json</option>-->
                   </select>
                 </div>
-                <button type="submit" class="btn btn-primary">Seleziona</button>
+                <button type="submit" class="btn btn-primary" id="destButton">Seleziona</button>
             </form>
         </div>
       </div>
-      <!-- Editor per lo schema destinazione-->
+      <!-- Parser per lo schema destinazione-->
       <div id="destJsonEditor" class="mt-4 mb-4" style="display:none;">
         <div class="card shadow-lg">
             <div class="card-header">
@@ -88,9 +122,11 @@
       </div>
     </div>
   </div>
+  <!-- Container per il bottone di creazione della funzione di mapping -->
   <div class="text-center">
     <button id="mapButton" class="btn btn-primary mb-3 hidden" onclick="collectMapping()">Crea la funzione di mapping</button>
   </div>
+  <!-- Container per la funzione di mapping -->
   <pre id="mappingFunctionContainer" class="prettify mt-4 hidden"></pre>
   
 

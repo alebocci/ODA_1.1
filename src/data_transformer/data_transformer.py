@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import os
 from flask import Flask, render_template, request, jsonify, session
@@ -15,7 +16,7 @@ app.config['DEST_FOLDER'] = DEST_FOLDER
 os.makedirs(INPUT_FOLDER, exist_ok=True)
 os.makedirs(DEST_FOLDER, exist_ok=True)
 
-SCHEMA = {"POLIMI": {
+SCHEMA_DEST_DEFAULT = {"POLIMI": {
                         "timestamp": "integer", 
                         "generator_id": "string", 
                         "topic": "string", 
@@ -25,7 +26,106 @@ SCHEMA = {"POLIMI": {
                                 "unit": "string or null"
                             }
                         }
+                    },
+            "SCP": {
+                    "UrbanDataset" : {
+                        "context" : {
+                            "producer" : {
+                                "id" : "Solution-ID",
+                                "schemeID" : "SCPS"
+                            },
+                            "timeZone" : "UTC+1",
+                            "timestamp" : "2024-11-26T15:09:46",
+                            "coordinates" : {
+                                "format" : "WGS84-DD",
+                                "latitude" : 0.0,
+                                "longitude" : 0.0,
+                                "height" : 0.0
+                            },
+                            "language" : "IT",
+                            "note" : ""
+                        },
+                        "specification" : {
+                            "version" : "2.0",
+                            "id" : {
+                                "value" : "BuildingElectricConsumption-2.0",
+                                "schemeID" : "SCPS"
+                            },
+                            "name" : "Building Electric\n            Consumption",
+                            "uri" : "https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption",
+                            "properties" : {
+                                "propertyDefinition" : [
+                                    {
+                                        "propertyName" : "BuildingID",
+                                        "propertyDescription" : "Identificatore dell'edificio",
+                                        "dataType" : "string",
+                                        "unitOfMeasure" : "dimensionless"
+                                    },
+                                    {
+                                        "propertyName" : "BuildingName",
+                                        "propertyDescription" : "Etichetta associata all'edificio",
+                                        "dataType" : "string",
+                                        "unitOfMeasure" : "dimensionless"
+                                    },
+                                    {
+                                        "propertyName" : "ElectricConsumption",
+                                        "propertyDescription" : "Consumo energia elettrica",
+                                        "dataType" : "double",
+                                        "unitOfMeasure" : "kilowattHour",
+                                        "measurementType" : "average"
+                                    },
+                                    {
+                                        "propertyName" : "period",
+                                        "propertyDescription" : "Periodo durante il quale sono stati rilevati i dati riportati nella riga",
+                                        "subProperties" : {
+                                            "propertyName" : [
+                                                "start_ts",
+                                                "end_ts"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "propertyName" : "start_ts",
+                                        "propertyDescription" : "Marca temporale indicante l'inizio del periodo",
+                                        "dataType" : "dateTime",
+                                        "unitOfMeasure" : "dimensionless"
+                                    },
+                                    {
+                                        "propertyName" : "end_ts",
+                                        "propertyDescription" : "Marca temporale indicante la fine del periodo",
+                                        "dataType" : "dateTime",
+                                        "unitOfMeasure" : "dimensionless"
+                                    }
+                                ]
+                            }
+                        },
+                        "values" : {
+                            "line" : [
+                                {
+                                    "id" : 1,
+                                    "period" : {
+                                        "start_ts" : "2000-12-31T00:00:00",
+                                        "end_ts" : "2000-12-31T23:59:00"
+                                    },
+                                    "property" : [
+                                        {
+                                            "name" : "BuildingID",
+                                            "val" : " "
+                                        },
+                                        {
+                                            "name" : "BuildingName",
+                                            "val" : " "
+                                        },
+                                        {
+                                            "name" : "ElectricConsumption",
+                                            "val" : " "
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
                     }
+                }
             }
 
 # endpoint per la pagina principale
@@ -41,10 +141,13 @@ def uploadInputSchema():
         file = request.files['inputSchema']
         # Verifico che il file sia un file JSON
         if not file.filename.endswith('.json'):
+            # se non lo è restituisco un errore
             return jsonify({'error': 'Il file deve essere un file JSON'}), 400
         # creo il path completo del file e lo salvo
         inputFilename = secure_filename(file.filename)
+        # salvo il nome nella sessione
         session['inputFilename'] = inputFilename
+        # creo il path completo e lo salvo
         inputSchemaPath = os.path.join(app.config['INPUT_FOLDER'], inputFilename)
         file.save(inputSchemaPath)
         # Leggo il contenuto del file
@@ -56,7 +159,8 @@ def uploadInputSchema():
         except json.JSONDecodeError as e:
             # se la decodifica fallisce restituisco un errore
             return jsonify({'error': f"Errore nella decodifica del file JSON: {e}"}), 400
-        # restituisce la struttura del JSON al frontend
+        # se tutto va bene salvo la struttura del json della sessione e la restituisco al frontend
+        session['inputSchemaStructure'] = jsonData
         return jsonify({'jsonStructure': jsonData}), 200
     except Exception as e:
         # se ci sono errori restituisco un messaggio di errore
@@ -68,60 +172,80 @@ def uploadDestSchema():
     try:
         # Ottieni il nome dello schema inviato dal frontend
         requestJson = request.get_json()
-        # Estrai il valore della destinazione (destSchema)
+        # Estrai il valore della destinazione (destSchema, o POLIMI o SCP)
         selectedSchema = requestJson.get('destSchema')
-        if not selectedSchema in SCHEMA.keys():
+        if not selectedSchema in SCHEMA_DEST_DEFAULT.keys():
+            # se non c'è il nome dello schema restituisco un errore
             return jsonify({'error': 'Non esiste lo schema selezionato'}), 400
-        # Schema POLIMI
-        jsonStructure = SCHEMA[selectedSchema]
+        # Schema POLIMI o SCP (successivamente saranno file JSON con la struttura di POLIMI o SCP)
+        jsonStructure = SCHEMA_DEST_DEFAULT[selectedSchema]
         return jsonify({'jsonStructure': jsonStructure})
     except Exception as e:
         # Se c'è un errore restituiamo un messaggio di errore
         return jsonify({'error': str(e)}), 500
     
 # endpoint per la generazione della funzione di mapping 
-@app.route('/generateMappingFunction', methods=['POST'])
-def generateMappingFunction():
+@app.route('/generateMappingFunctionPOLIMI', methods=['POST'])
+def generateMappingFunctionPOLIMI():
     try:
         # Ottieni i dati inviati dal frontend
         mappingData = request.get_json()
+        # Controllo per timestamp
+        if 'timestamp' not in mappingData:
+            mappingData['timestamp'] = {'value': datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), 'isConstant': True}
         # Genera il codice della funzione di mapping
         functionLines = []
         functionLines.append("def mappingFunction(inputData):")
         functionLines.append("    mappedData = {}")
-
         for key, items in mappingData.items():
-            if key == "attributes":
+            # se sono nel campo data gli attributi devono essere oggetti con campi value e unit
+            if key == "data":
                 functionLines.append("    mappedData['data'] = {}")
                 for attribute in items:
-                    # attribute[key] -> percorso dell'attributo nel JSON di partenza
-                    if len(attribute['key'].split('.')) == 1:
-                        # Aggiungiamo la riga per ciascun attributo
-                        functionLines.append(
-                            f"    mappedData['data']['{attribute['key']}'] = {{'value': inputData['{attribute['key']}'], 'unit': '{attribute['unit']}'}}"
-                        )
+                    # attribute: {'key': 'k1.k2.k3...', , 'value': 'any', 'unit': 'unità', isArrayValue: }
+                    # estraggo il percorso della chiave
+                    pathArray = attribute['key'].split('.')
+                    # creo la stringa per il path per referenziare l'attributo da mappare
+                    path = 'inputData'
+                    for p in pathArray:
+                        path = path + f"['{p}']"
+                    # se l'attributo è il valore di un array
+                    if attribute['isArrayValue']:
+                        # Gestione dei valori
+                        arrayPath = 'inputData'
+                        for p in pathArray[:-1]:
+                            arrayPath = arrayPath + f"['{p}']"
+                        item = pathArray[-1]
+                        # creo un array vuoto e per ogni valore dell'array creo un campo valore e unità 
+                        # con all'interno i valori e l'unita dell'elemento dell'array
+                        functionLines.append(f"    mappedData['data']['{item}'] = []")
+                        functionLines.append(f"    for i, item in enumerate({arrayPath}):")
+                        functionLines.append(f"        mappedData['data']['{item}'].append({{")
+                        functionLines.append(f"            'value': item['{item}'],")
+                        functionLines.append(f"            'unit': '{attribute['unit']}'")
+                        functionLines.append("        })")
                     else:
-                        # Per gli attributi nidificati
-                        keyArray = attribute['key'].split('.')
-                        inputPath = "inputData" 
-                        for keyPart in keyArray:
-                            if "[" in keyPart and "]" in keyPart: 
-                                arrayName, index = keyPart.split("[")
-                                index = index.replace("]", "")
-                                inputPath += f"['{arrayName}'][{index}]"
-                            else:
-                                inputPath += f"['{keyPart}']"
-                        # Aggiungiamo la riga per l'attributo nidificato o array
-                        functionLines.append(
-                            f"    mappedData['data']['{keyArray[-1]}'] = {{'value': {inputPath}, 'unit': '{attribute['unit']}'}}"
-                        )
-            else:
-                functionLines.append(f"    mappedData['{key}'] = inputData.get('{items}')")
+                        # Gestione di attributi semplici e oggetti
+                        functionLines.append(f"    mappedData['data']['{pathArray[-1]}'] = {{")
+                        functionLines.append(f"        'value': {path},")
+                        functionLines.append(f"        'unit': '{attribute['unit']}'")
+                        functionLines.append("    }")
+            elif key in ["generator_id", "topic", "timestamp"]:
+                # Distinzione tra costanti e valori drag-and-drop
+                value = items['value']
+                is_constant = items.get('isConstant', False)
+                if is_constant:
+                    # Se è una costante, inserisci direttamente il valore
+                    functionLines.append(f"    mappedData['{key}'] = '{value}'")
+                else:
+                    # Se è un valore drag-and-drop, usa inputData
+                    functionLines.append(f"    mappedData['{key}'] = inputData.get('{value}')")
+        # ritorno del mappedData
         functionLines.append("    return mappedData")
         # Unisci il codice in un'unica stringa
         mappingFunction = "\n".join(functionLines)
         # Restituisci la funzione di mapping al frontend
         return jsonify({'mappingFunction': mappingFunction}), 200
     except Exception as e:
-        print(e)
+        # Se c'è un errore restituisco un messaggio di errore
         return jsonify({'error': f"Errore durante la generazione della funzione di mapping: {str(e)}"}), 500

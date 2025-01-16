@@ -5,6 +5,6 @@
     "buildingId": "identificatore edificio", 
     "buildingName": "nome edificio", 
     "area": "area edificio",
-    "electricConsumption": "consumo edificio"
+    "electricConsumption": "consumi edificio"
   }
 
