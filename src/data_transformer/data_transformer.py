@@ -28,101 +28,106 @@ SCHEMA_DEST_DEFAULT = {"POLIMI": {
                         }
                     },
             "SCP": {
-                    "UrbanDataset" : {
-                        "context" : {
-                            "producer" : {
-                                "id" : "Solution-ID",
-                                "schemeID" : "SCPS"
+                    "timestamp": "integer",
+                    "generator_id": "string",
+                    "topic": "string",
+                    "data": {
+                            "UrbanDataset" : {
+                            "context" : {
+                                "producer" : {
+                                    "id" : "Solution-ID",
+                                    "schemeID" : "SCPS"
+                                },
+                                "timeZone" : "UTC+1",
+                                "timestamp" : "2024-11-26T15:09:46",
+                                "coordinates" : {
+                                    "format" : "WGS84-DD",
+                                    "latitude" : 0.0,
+                                    "longitude" : 0.0,
+                                    "height" : 0.0
+                                },
+                                "language" : "IT",
+                                "note" : ""
                             },
-                            "timeZone" : "UTC+1",
-                            "timestamp" : "2024-11-26T15:09:46",
-                            "coordinates" : {
-                                "format" : "WGS84-DD",
-                                "latitude" : 0.0,
-                                "longitude" : 0.0,
-                                "height" : 0.0
-                            },
-                            "language" : "IT",
-                            "note" : ""
-                        },
-                        "specification" : {
-                            "version" : "2.0",
-                            "id" : {
-                                "value" : "BuildingElectricConsumption-2.0",
-                                "schemeID" : "SCPS"
-                            },
-                            "name" : "Building Electric\n            Consumption",
-                            "uri" : "https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption",
-                            "properties" : {
-                                "propertyDefinition" : [
-                                    {
-                                        "propertyName" : "BuildingID",
-                                        "propertyDescription" : "Identificatore dell'edificio",
-                                        "dataType" : "string",
-                                        "unitOfMeasure" : "dimensionless"
-                                    },
-                                    {
-                                        "propertyName" : "BuildingName",
-                                        "propertyDescription" : "Etichetta associata all'edificio",
-                                        "dataType" : "string",
-                                        "unitOfMeasure" : "dimensionless"
-                                    },
-                                    {
-                                        "propertyName" : "ElectricConsumption",
-                                        "propertyDescription" : "Consumo energia elettrica",
-                                        "dataType" : "double",
-                                        "unitOfMeasure" : "kilowattHour",
-                                        "measurementType" : "average"
-                                    },
-                                    {
-                                        "propertyName" : "period",
-                                        "propertyDescription" : "Periodo durante il quale sono stati rilevati i dati riportati nella riga",
-                                        "subProperties" : {
-                                            "propertyName" : [
-                                                "start_ts",
-                                                "end_ts"
-                                            ]
-                                        }
-                                    },
-                                    {
-                                        "propertyName" : "start_ts",
-                                        "propertyDescription" : "Marca temporale indicante l'inizio del periodo",
-                                        "dataType" : "dateTime",
-                                        "unitOfMeasure" : "dimensionless"
-                                    },
-                                    {
-                                        "propertyName" : "end_ts",
-                                        "propertyDescription" : "Marca temporale indicante la fine del periodo",
-                                        "dataType" : "dateTime",
-                                        "unitOfMeasure" : "dimensionless"
-                                    }
-                                ]
-                            }
-                        },
-                        "values" : {
-                            "line" : [
-                                {
-                                    "id" : 1,
-                                    "period" : {
-                                        "start_ts" : "2000-12-31T00:00:00",
-                                        "end_ts" : "2000-12-31T23:59:00"
-                                    },
-                                    "property" : [
+                            "specification" : {
+                                "version" : "2.0",
+                                "id" : {
+                                    "value" : "BuildingElectricConsumption-2.0",
+                                    "schemeID" : "SCPS"
+                                },
+                                "name" : "Building Electric\n            Consumption",
+                                "uri" : "https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption",
+                                "properties" : {
+                                    "propertyDefinition" : [
                                         {
-                                            "name" : "BuildingID",
-                                            "val" : " "
+                                            "propertyName" : "BuildingID",
+                                            "propertyDescription" : "Identificatore dell'edificio",
+                                            "dataType" : "string",
+                                            "unitOfMeasure" : "dimensionless"
                                         },
                                         {
-                                            "name" : "BuildingName",
-                                            "val" : " "
+                                            "propertyName" : "BuildingName",
+                                            "propertyDescription" : "Etichetta associata all'edificio",
+                                            "dataType" : "string",
+                                            "unitOfMeasure" : "dimensionless"
                                         },
                                         {
-                                            "name" : "ElectricConsumption",
-                                            "val" : " "
+                                            "propertyName" : "ElectricConsumption",
+                                            "propertyDescription" : "Consumo energia elettrica",
+                                            "dataType" : "double",
+                                            "unitOfMeasure" : "kilowattHour",
+                                            "measurementType" : "average"
+                                        },
+                                        {
+                                            "propertyName" : "period",
+                                            "propertyDescription" : "Periodo durante il quale sono stati rilevati i dati riportati nella riga",
+                                            "subProperties" : {
+                                                "propertyName" : [
+                                                    "start_ts",
+                                                    "end_ts"
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "propertyName" : "start_ts",
+                                            "propertyDescription" : "Marca temporale indicante l'inizio del periodo",
+                                            "dataType" : "dateTime",
+                                            "unitOfMeasure" : "dimensionless"
+                                        },
+                                        {
+                                            "propertyName" : "end_ts",
+                                            "propertyDescription" : "Marca temporale indicante la fine del periodo",
+                                            "dataType" : "dateTime",
+                                            "unitOfMeasure" : "dimensionless"
                                         }
                                     ]
                                 }
-                            ]
+                            },
+                            "values" : {
+                                "line" : [
+                                    {
+                                        "id" : 1,
+                                        "period" : {
+                                            "start_ts" : "2000-12-31T00:00:00",
+                                            "end_ts" : "2000-12-31T23:59:00"
+                                        },
+                                        "property" : [
+                                            {
+                                                "name" : "BuildingID",
+                                                "val" : " "
+                                            },
+                                            {
+                                                "name" : "BuildingName",
+                                                "val" : " "
+                                            },
+                                            {
+                                                "name" : "ElectricConsumption",
+                                                "val" : " "
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
                         }
                     }
                 }
@@ -184,6 +189,38 @@ def uploadDestSchema():
         # Se c'è un errore restituiamo un messaggio di errore
         return jsonify({'error': str(e)}), 500
     
+# endpoint per il caricamento del file JSON con lo schema destinazione generico e ritornare la struttura al frontend
+@app.route('/uploadDestSchemaFile', methods=['POST'])
+def uploadDestSchemaFile():
+    try:
+        # Carico il file JSON dal form frontend (name="destSchemaFile")
+        file = request.files['destSchemaFile']
+        # Verifico che il file sia un file JSON
+        if not file.filename.endswith('.json'):
+            # se non lo cerco restituisco un errore
+            return jsonify({'error': 'Il file deve essere un file JSON'}), 400
+        # creo il path completo del file e lo salvo
+        destFilename = secure_filename(file.filename)
+        # salvo il nome nella sessione
+        session['destFilename'] = destFilename
+        # creo il path completo e lo salvo
+        destSchemaPath = os.path.join(app.config['DEST_FOLDER'], destFilename)
+        file.save(destSchemaPath)
+        # Leggo il contenuto del file
+        with open(destSchemaPath, 'r') as f:
+            lines = f.read()
+        try:
+            jsonData = json.loads(lines)
+        except json.JSONDecodeError as e:
+            # se la decodifica fallisce restituisco un errore
+            return jsonify({'error': f"Errore nella decodifica del file JSON: {e}"}), 400
+        # se tutto va bene salvo la struttura del json della sessione e la restituisco al frontend
+        session['destSchemaStructure'] = jsonData
+        return jsonify({'jsonStructure': jsonData}), 200
+    except Exception as e:
+        # se ci sono errori restituisco un messaggio di errore
+        return jsonify({'error': f"Errore durante il caricamento del file JSON: {e}"}), 500
+
 # endpoint per la generazione della funzione di mapping 
 @app.route('/generateMappingFunctionPOLIMI', methods=['POST'])
 def generateMappingFunctionPOLIMI():

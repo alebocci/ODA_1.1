@@ -4,25 +4,21 @@ import json
 def mappingFunction(inputData):
     mappedData = {}
     mappedData['data'] = {}
-    mappedData['data']['area'] = {
-        'value': inputData['area'],
-        'unit': 'm^2'
-    }
     mappedData['data']['buildingId'] = {
-        'value': inputData['buildingId'],
-        'unit': 'None'
-    }
-    mappedData['data']['buildingName'] = {
-        'value': inputData['buildingName'],
+        'value': inputData['att']['buildingId'],
         'unit': 'None'
     }
     mappedData['data']['electricConsumption'] = {
-        'value': inputData['electricConsumption'],
+        'value': inputData['att']['electricConsumption'],
         'unit': 'kWh'
     }
-    mappedData['generator_id'] = 'generatore di prova'
-    mappedData['topic'] = 'topic di prova'
-    mappedData['timestamp'] = '2025-01-16T17:28:03Z'
+    mappedData['data']['period'] = {
+        'value': inputData['att']['period'],
+        'unit': 'None'
+    }
+    mappedData['generator_id'] = inputData.get('generatorId')
+    mappedData['timestamp'] = inputData.get('timestamp')
+    mappedData['topic'] = inputData.get('topic')
     print(json.dumps(mappedData, indent=4))
     return mappedData
 
@@ -30,12 +26,28 @@ def mappingFunction(inputData):
 if __name__ == '__main__':
     mappingFunction(
     {
-         
+    "timestamp": "ora", 
+    "generatorId": "generatore con oggetti", 
+    "topic": "topic con Array", 
+    "att": {
         "buildingId": "1234", 
-        "buildingName": "edificio t", 
-        "area": "200",
-        "electricConsumption": "567.89"
+        "nOfFloors": "5", 
+        "buildingName": "edificio 1", 
+        "rooms": [
+            {
+                "area": "32",
+                "nOfPeople": "4",
+                "floor": "2",
+                "roomId": "1"
+            }
+        ],
+        "electricConsumption": "234.78",
+        "period": {
+            "start_ts": "11:22:33",
+            "end_ts": "22:33:44"
+        }
     }
+}
 )
     
 

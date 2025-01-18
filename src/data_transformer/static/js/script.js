@@ -37,8 +37,8 @@ document.getElementById('uploadInputSchema').onsubmit = function(event) {
 };
 
 
-// funzione per inviare e caricare lo schema di destinazione scelto
-document.getElementById("uploadDestSchema").onsubmit = function(event) {
+// funzione per inviare e caricare lo schema di destinazione scelto tra POLIMI e SCP
+document.getElementById("uploadDestSchemaSelect").onsubmit = function(event) {
     // Blocca il comportamento di default (evitare il refresh della pagina)
     event.preventDefault();
     // Ottieni il valore selezionato dal dropdown
@@ -46,33 +46,6 @@ document.getElementById("uploadDestSchema").onsubmit = function(event) {
     // Controlla se un'opzione è stata selezionata
     if (selectedSchema === "") {
         showDestError("Seleziona un formato di destinazione.");
-        return;
-    }
-    // gestisco il caso in cui l'untente voglia caricare il json dello schema destinazione
-    if (selectedSchema === "FILE") {
-        const destSchemaSelect = document.getElementById("destSchemaSelect");
-        const destButton = document.getElementById("destButton");
-        if (destSchemaSelect) {
-            destSchemaSelect.remove();
-            destButton.remove();
-        }
-        const divContainer = document.createElement("div");
-        divContainer.className = "mb-4";
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.name = "destSchema";
-        fileInput.id = "destSchemaFile";
-        fileInput.className = "form-control";
-        divContainer.appendChild(fileInput);
-        const buttonContainer = document.createElement("button");
-        buttonContainer.type = "submit";
-        buttonContainer.className = "btn btn-primary";
-        buttonContainer.textContent = "Carica";
-        buttonContainer.id = "destSchemaButton";
-        buttonContainer.onclick = () => uploadNewDestSchema();
-        const form = document.getElementById("uploadDestSchema");
-        form.appendChild(divContainer);
-        form.appendChild(buttonContainer);
         return;
     }
     // nei casi di default invia la richiesta al server con lo schema json
@@ -91,8 +64,11 @@ document.getElementById("uploadDestSchema").onsubmit = function(event) {
             // Usa la struttura JSON per visualizzare il risultato
             const destJsonStructure = data.jsonStructure;
             const editor = document.getElementById('destJsonStructure');
-            // TODO: aggiungere controllo su POLIMI/SCP 
-            editor.innerHTML = generateDestDroppableCardPOLIMI(destJsonStructure);
+            if(selectedSchema === "POLIMI") {
+                editor.innerHTML = generateDestDroppableCardPOLIMI(destJsonStructure);
+            }else if(selectedSchema === "SCP") {
+                editor.innerHTML = generateDestDroppableCardSCP(destJsonStructure);
+            }
             // mostro la struttura del json caricato
             showModal("Formato schema di destinazione caricato", JSON.stringify(destJsonStructure, null, 2));
             // mostro l'editor altrimenti nascosto
@@ -105,9 +81,28 @@ document.getElementById("uploadDestSchema").onsubmit = function(event) {
 };
 
 
-// TODO:funzione per inviare il file JSON con lo schema di destinazione non di default
-function uploadNewDestSchema() {
-    showDestSuccess("Funzione non ancora implementata");
+// funzione per il caricamento del file JSON con lo schema di destinazione generico
+document.getElementById('uploadDestSchemaFile').onsubmit = function(event) {
+    event.preventDefault();
+    var formData = new FormData(event.target);
+    fetch('/uploadDestSchemaFile', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showDestError(data.error);
+        } else {
+            destJsonStructure = data.jsonStructure;
+            showModal("Formato schema di destinazione caricato", JSON.stringify(destJsonStructure, null, 2));
+            const editor = document.getElementById('destJsonStructure');
+            editor.innerHTML = generateDestDroppableCardFILE(destJsonStructure);
+            document.getElementById('destJsonEditor').style.display = 'block';
+            document.getElementById('destJsonEditor').classList.remove('hidden');
+        }
+    })
+    .catch(error => console.error('Errore:', error));
 }
 
 
@@ -332,6 +327,71 @@ function generateDestDroppableCardPOLIMI(destJsonStructure) {
 }
 
 
+// Funzione per generare il codice necessario per creare le card droppabili dei campi per SCP
+function generateDestDroppableCardSCP(destJsonStructure) {
+    let html = '';
+    for(let key in destJsonStructure) {
+        if(key == "data") {
+            const propertyDefinitions = destJsonStructure?.data?.UrbanDataset?.specification?.properties?.propertyDefinition;
+            if (Array.isArray(propertyDefinitions)) {
+                // Itera su ogni proprietà definita
+                propertyDefinitions.forEach((property) => {
+                    const propertyName = property.propertyName || "Unknown";
+                    const unitOfMeasure = property.unitOfMeasure || "Unknown";
+
+                    // Crea una card per ogni proprietà
+                    html += `
+                        <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${propertyName}">
+                            <div class="card-header text-white">
+                                <p class="card-title">${propertyName}</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="dropzone" id="dropzone-${propertyName}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        }else {
+            html += `
+            <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
+                <div class="card-header text-white">
+                    <p class="card-title">${key}</p>
+                </div>
+                <div class="card-body">
+                    <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+            </div>
+        `;
+        }
+    }
+    
+    
+    return html;
+}
+
+
+// Funzione per generare il codice necessario per creare le card droppabili dei campi per un FILE generico
+function generateDestDroppableCardFILE(destJsonStructure) {
+    let html = '';
+    // Iteriamo su ogni chiave della struttura del JSON di destinazione
+    for (let key in destJsonStructure) {
+        // Per ogni chiave, creiamo una card
+        html += `
+            <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
+                <div class="card-header text-white">
+                    <p class="card-title">${key}</p>
+                </div>
+                <div class="card-body">
+                    <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+            </div>
+        `;
+    }
+    return html;
+}
+
+
 // Permette di trascinare sopra una zona
 function allowDrop(ev) {
     ev.preventDefault();
@@ -409,7 +469,7 @@ function drop(ev) {
 }
 
 
-// Funzione per aggiungere i campi di valore e unità di misura
+// Funzione per aggiungere i campi di valore e unità di misura (POLIMI)
 function addUnitInput(draggedElement) {
     const inputContainer = document.createElement("div");
     inputContainer.classList.add("d-flex", "align-items-center", "mt-2");
@@ -446,7 +506,7 @@ function addUnitInput(draggedElement) {
 }
 
 
-// Funzione per ripristinare un elemento alla sezione di origine
+// Funzione per ripristinare un elemento alla sezione di origine (POLIMI)
 function restoreToOrigin(element, idDropzone) {
     const originSection = document.getElementById("inputJsonStructure");
     const dropzones = document.querySelectorAll('[id^="dropzone"]');
@@ -558,7 +618,7 @@ function adjustDropzoneHeight(dropzone) {
 }
 
 
-// Funzione per raccolgiere il mapping e inviarlo al server
+// Funzione per raccolgiere il mapping e inviarlo al server (POLIMI)
 document.getElementById('mapButton').onclick = function(event) {
     event.preventDefault();
     const dropzones = document.querySelectorAll('[id^="dropzone"]');
@@ -629,6 +689,7 @@ document.getElementById('mapButton').onclick = function(event) {
             }
         }
     });
+    console.log(mappingData);
     // Invio il mapping al backend
     fetch('/generateMappingFunctionPOLIMI', {
         method: 'POST',
@@ -653,7 +714,7 @@ document.getElementById('mapButton').onclick = function(event) {
 };
 
 
-// Funzione per estrarre i valori ricorsivamente
+// Funzione per estrarre i valori ricorsivamente (POLIMI)
 function extractRecursive(keyPath, value) {
     const results = [];
     // se il valore é un array

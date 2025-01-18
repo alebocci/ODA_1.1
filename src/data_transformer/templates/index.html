@@ -92,20 +92,31 @@
       <!-- Container del Form per scegliere lo schema di destinazione-->
       <div class="card shadow-lg">
         <div class="card-header text-center">
-            <h1>scegli lo schema di destinazione</h1>
+            <h1>Scegli lo schema di destinazione</h1>
         </div>
         <div class="card-body">
-            <form id="uploadDestSchema" enctype="multipart/form-data">
-                <div class="mb-4" id="destSchemaSelect">
-                  <select class="form-select" id="destSchema" name="destSchema" aria-label="Default select example">
-                    <option value="Scegli lo schema di destinazione">Seleziona uno schema o inserisci il tuo schema json</option>
-                    <option value="POLIMI">POLIMI</option>
-                    <!--<option value="SCP">SCP</option>
-                    <option value="FILE">Inserisci il file json</option>-->
-                  </select>
-                </div>
-                <button type="submit" class="btn btn-primary" id="destButton">Seleziona</button>
-            </form>
+          <div class="row">
+              <div class="col-md-6">
+                  <form id="uploadDestSchemaSelect" enctype="multipart/form-data">
+                      <div class="mb-4" id="destSchemaSelect">
+                          <select class="form-select" id="destSchema" name="destSchema" aria-label="Default select example">
+                              <option value="Scegli lo schema di destinazione">Seleziona uno schema o inserisci il tuo schema json</option>
+                              <option value="POLIMI">POLIMI</option>
+                              <option value="SCP">SCP</option>
+                          </select>
+                      </div>
+                      <button type="submit" class="btn btn-primary" id="destButton">Seleziona</button>
+                  </form>
+              </div>
+              <div class="col-md-6">
+                  <form id="uploadDestSchemaFile" enctype="multipart/form-data">
+                      <div class="mb-4">
+                          <input type="file" class="form-control" id="destSchemaFile" name="destSchemaFile" required>
+                      </div>
+                      <button type="submit" class="btn btn-primary">Carica</button>
+                  </form>
+              </div>
+          </div>
         </div>
       </div>
       <!-- Parser per lo schema destinazione-->

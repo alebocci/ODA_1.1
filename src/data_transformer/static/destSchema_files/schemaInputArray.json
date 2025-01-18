@@ -1,0 +1,24 @@
+{
+    "timestamp": "string", 
+    "generatorId": "string", 
+    "topic": "string", 
+    
+        "buildingId": "string", 
+        "nOfFloors": "integer", 
+        "buildingName": "string", 
+        "rooms": [
+            {
+                "area": "float",
+                "nOfPeople": "integer",
+                "floor": "integer",
+                "roomId": "integer"
+            }
+        ],
+        "electricConsumption": "float",
+        "period": {
+            "start_ts": "string",
+            "end_ts": "string"
+        }
+    
+}
+
