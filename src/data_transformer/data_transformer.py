@@ -55,7 +55,7 @@ SCHEMA_DEST_DEFAULT = {"POLIMI": {
                                     "value" : "BuildingElectricConsumption-2.0",
                                     "schemeID" : "SCPS"
                                 },
-                                "name" : "Building Electric\n            Consumption",
+                                "name" : "Building Electric Consumption",
                                 "uri" : "https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption",
                                 "properties" : {
                                     "propertyDefinition" : [

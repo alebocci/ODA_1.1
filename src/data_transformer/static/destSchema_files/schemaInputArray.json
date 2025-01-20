@@ -2,7 +2,7 @@
     "timestamp": "string", 
     "generatorId": "string", 
     "topic": "string", 
-    
+    "att": {
         "buildingId": "string", 
         "nOfFloors": "integer", 
         "buildingName": "string", 
@@ -19,6 +19,6 @@
             "start_ts": "string",
             "end_ts": "string"
         }
-    
+    }
 }
 

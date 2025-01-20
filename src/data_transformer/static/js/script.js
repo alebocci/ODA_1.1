@@ -372,22 +372,80 @@ function generateDestDroppableCardSCP(destJsonStructure) {
 
 
 // Funzione per generare il codice necessario per creare le card droppabili dei campi per un FILE generico
-function generateDestDroppableCardFILE(destJsonStructure) {
+function generateDestDroppableCardFILE(destJsonStructure, parentKey = '') {
     let html = '';
-    // Iteriamo su ogni chiave della struttura del JSON di destinazione
+
     for (let key in destJsonStructure) {
-        // Per ogni chiave, creiamo una card
-        html += `
-            <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
-                <div class="card-header text-white">
-                    <p class="card-title">${key}</p>
+        let currentKey = parentKey ? `${parentKey}.${key}` : key;
+        let value = destJsonStructure[key];
+
+        if (Array.isArray(value)) {
+            // Genera una card per l'array
+            html += `
+                <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${currentKey}">
+                    <div class="card-header text-white">
+                        <p class="card-title">${key} [</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="dropzone" id="dropzone-${currentKey}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            `;
+
+            // Itera sugli elementi dell'array
+            value.forEach((item, index) => {
+                const arrayItemKey = `${currentKey}[${index}]`;
+
+                if (typeof item === 'object' && item !== null) {
+                    // Ricorsione per gli oggetti all'interno dell'array
+                    html += generateDestDroppableCardFILE(item, arrayItemKey);
+                } else {
+                    // Genera una card per i valori primitivi
+                    html += `
+                        <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${arrayItemKey}">
+                            <div class="card-header text-white">
+                                <p class="card-title">${item}</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="dropzone" id="dropzone-${arrayItemKey}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            // Chiude la card dell'array
+            html += `
+                    </div>
+                    <div class="array-footer text-start key-text fw-bold">]</div>
                 </div>
-                <div class="card-body">
-                    <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            `;
+        } else if (typeof value === 'object' && value !== null) {
+            // Ricorsione per oggetti annidati
+            html += `
+                <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${currentKey}">
+                    <div class="card-header text-white">
+                        <p class="card-title">${key} {</p>
+                    </div>
+                    <div class="card-body">
+                        ${generateDestDroppableCardFILE(value, currentKey)}
+                    </div>
+                    <div class="object-footer text-start key-text fw-bold">}</div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            // Genera una card per i valori primitivi
+            html += `
+                <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${currentKey}">
+                    <div class="card-header text-white">
+                        <p class="card-title">${key}</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="dropzone" id="dropzone-${currentKey}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    </div>
+                </div>
+            `;
+        }
     }
+
     return html;
 }
 
