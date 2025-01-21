@@ -121,6 +121,12 @@ function showModal(title, text) {
 function showMissingFieldsModal(fieldsList) {
     const modal = new bootstrap.Modal(document.getElementById('missingFieldsModal'));
     modal.show();
+    const modalTitle = document.getElementById('missingFieldsModalLabel');
+    if(fieldsList.length === 2) {
+        modalTitle.textContent = "Inserisci i campi generator_id e topic";
+    }else {
+        modalTitle.textContent = "Inserisci il campo " + fieldsList[0];
+    }
     const modalBody = document.getElementById('missingFieldsModalText');
     modalBody.innerHTML = '';
     // Creo un contenitore per gli input
@@ -319,9 +325,11 @@ function generateDestDroppableCardPOLIMI(destJsonStructure) {
                 </div>
                 <div class="card-body">
                     <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                </div>
-            </div>
         `;
+        if(key == "generator_id" || key == "topic") {
+            html += `<button class="btn btn-primary" id="buttonAdd" onclick="showMissingFieldsModal(['${key}'])">+</button>`;
+        }
+        html += `</div></div>`;
     }
     return html;
 }
@@ -440,9 +448,11 @@ function generateDestDroppableCardFILE(destJsonStructure, parentKey = '') {
                     </div>
                     <div class="card-body">
                         <div class="dropzone" id="dropzone-${currentKey}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                    </div>
-                </div>
             `;
+            if(key == "generator_id" || key == "topic" || key == "generatorId" || key == "generatorid") {
+                html += `<button class="btn btn-primary" id="buttonAdd" onclick="showMissingFieldsModal(['${key}'])">+</button>`;
+            }
+            html += `</div></div>`;
         }
     }
 

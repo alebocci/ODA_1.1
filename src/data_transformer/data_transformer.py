@@ -229,7 +229,7 @@ def generateMappingFunctionPOLIMI():
         mappingData = request.get_json()
         # Controllo per timestamp
         if 'timestamp' not in mappingData:
-            mappingData['timestamp'] = {'value': datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"), 'isConstant': True}
+            mappingData['timestamp'] = {'value': 'timestamp di arrivo del dato ad ODA', 'isConstant': True}
         # Genera il codice della funzione di mapping
         functionLines = []
         functionLines.append("def mappingFunction(inputData):")
