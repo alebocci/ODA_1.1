@@ -828,7 +828,7 @@ function extractRecursive(keyPath, value) {
     // se il valore é un array
     if (Array.isArray(value)) {
         // mi salvo l'array intero e poi itero su tutti i suoi elementi
-        results.push({ key: keyPath, value: value, isArrayValue: true });
+        results.push({ key: keyPath, value: value, isArrayValue: false });
         value.forEach((item) => {
             results.push(...extractRecursive(keyPath, item).map(entry => ({
                 // aggiungo il fatto che sono elementi di un array
