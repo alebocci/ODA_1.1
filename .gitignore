@@ -5,4 +5,4 @@
 # Ignora i file __pycache__
 __pycache__/
 *.pyc
-.src/data_trasformer/provaFunzione.py
+./src/data_trasformer/provaFunzione.py
