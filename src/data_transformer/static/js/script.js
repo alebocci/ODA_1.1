@@ -1,10 +1,12 @@
 // variabili globali che contengono la struttura degli schemi di input e di destinazione
 let inputJsonStructure = {};
 let destJsonStructure = {};
-
+let removedElements = [];
+let selectedSchema;
+let lastSubmitted = null;
 
 // funzione per il caricamento del file JSON con lo schema di input
-document.getElementById('uploadInputSchema').onsubmit = function(event) {
+document.getElementById('uploadInputSchema').onsubmit = function (event) {
     // blocco del comportamento di default
     event.preventDefault();
     var formData = new FormData(event.target);
@@ -13,36 +15,40 @@ document.getElementById('uploadInputSchema').onsubmit = function(event) {
         method: 'POST',
         body: formData
     })
-    // converto la risposta in json (struttura json)
-    .then(response => response.json())
-    .then(data => {
-        // se la risposta del server contiene il campo error stampo l'errore
-        if (data.error) {
-            showInputError(data.error);
-        } else {
-            // estrago la struttura del json che mi ritorna il server
-            inputJsonStructure = data.jsonStructure;
-            // genero il codice necesssario per modificare i campi del json
-            const editor = document.getElementById('inputJsonStructure');
-            editor.innerHTML = generateInputSchemaEditor(inputJsonStructure);
-            // mostro la struttura del json caricato
-            showModal("Formato schema di input caricato", JSON.stringify(inputJsonStructure, null, 2));
-            // mostro l'editor altrimenti nascosto
-            document.getElementById('inputJsonEditor').style.display = 'block';
-            document.getElementById('inputJsonEditor').classList.remove('hidden');
-        }
-    })
-    // catturo eventuali errori
-    .catch(error => console.error('Errore:', error));
+        // converto la risposta in json (struttura json)
+        .then(response => response.json())
+        .then(data => {
+            // se la risposta del server contiene il campo error stampo l'errore
+            if (data.error) {
+                showInputError(data.error);
+            } else {
+                // estrago la struttura del json che mi ritorna il server
+                inputJsonStructure = data.jsonStructure;
+                // genero il codice necesssario per modificare i campi del json
+                const editor = document.getElementById('inputJsonStructure');
+                editor.innerHTML = generateInputSchemaEditor(inputJsonStructure);
+                // mostro la struttura del json caricato
+                showModal("Formato schema di input caricato", JSON.stringify(inputJsonStructure, null, 2));
+                // mostro l'editor altrimenti nascosto
+                document.getElementById('inputJsonEditor').style.display = 'block';
+                document.getElementById('inputJsonEditor').classList.remove('hidden');
+            }
+        })
+        // catturo eventuali errori
+        .catch(error => console.error('Errore:', error));
 };
 
 
 // funzione per inviare e caricare lo schema di destinazione scelto tra POLIMI e SCP
-document.getElementById("uploadDestSchemaSelect").onsubmit = function(event) {
+document.getElementById("uploadDestSchemaSelect").onsubmit = function (event) {
     // Blocca il comportamento di default (evitare il refresh della pagina)
     event.preventDefault();
+    if (lastSubmitted === "uploadDestSchemaFile") {
+        document.getElementById('uploadDestSchemaFile').reset();
+    }
+    lastSubmitted = "uploadDestSchemaSelect";
     // Ottieni il valore selezionato dal dropdown
-    var selectedSchema = document.getElementById("destSchema").value;
+    selectedSchema = document.getElementById("destSchema").value;
     // Controlla se un'opzione è stata selezionata
     if (selectedSchema === "") {
         showDestError("Seleziona un formato di destinazione.");
@@ -56,53 +62,58 @@ document.getElementById("uploadDestSchemaSelect").onsubmit = function(event) {
         },
         body: JSON.stringify({ destSchema: selectedSchema })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            showDestError(data.error);
-        } else {
-            // Usa la struttura JSON per visualizzare il risultato
-            const destJsonStructure = data.jsonStructure;
-            const editor = document.getElementById('destJsonStructure');
-            if(selectedSchema === "POLIMI") {
-                editor.innerHTML = generateDestDroppableCardPOLIMI(destJsonStructure);
-            }else if(selectedSchema === "SCP") {
-                editor.innerHTML = generateDestDroppableCardSCP(destJsonStructure);
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showDestError(data.error);
+            } else {
+                // Usa la struttura JSON per visualizzare il risultato
+                const destJsonStructure = data.jsonStructure;
+                const editor = document.getElementById('destJsonStructure');
+                if (selectedSchema === "POLIMI") {
+                    editor.innerHTML = generateDestDroppableCardPOLIMI(destJsonStructure);
+                } else if (selectedSchema === "SCP") {
+                    editor.innerHTML = generateDestDroppableCardSCP(destJsonStructure);
+                }
+                // mostro la struttura del json caricato
+                showModal("Formato schema di destinazione caricato", JSON.stringify(destJsonStructure, null, 2));
+                // mostro l'editor altrimenti nascosto
+                document.getElementById('destJsonEditor').style.display = 'block';
+                document.getElementById('destJsonEditor').classList.remove('hidden');
             }
-            // mostro la struttura del json caricato
-            showModal("Formato schema di destinazione caricato", JSON.stringify(destJsonStructure, null, 2));
-            // mostro l'editor altrimenti nascosto
-            document.getElementById('destJsonEditor').style.display = 'block';
-            document.getElementById('destJsonEditor').classList.remove('hidden');
-        }
-    })
-    // catturo eventuali errori
-    .catch(error => console.error('Errore:', error));
+        })
+        // catturo eventuali errori
+        .catch(error => console.error('Errore:', error));
 };
 
 
 // funzione per il caricamento del file JSON con lo schema di destinazione generico
-document.getElementById('uploadDestSchemaFile').onsubmit = function(event) {
+document.getElementById('uploadDestSchemaFile').onsubmit = function (event) {
     event.preventDefault();
+    if (lastSubmitted === "uploadDestSchemaSelect") {
+        document.getElementById('uploadDestSchemaSelect').reset();
+    }
+    lastSubmitted = "uploadDestSchemaFile";
+    selectedSchema = "FILE";
     var formData = new FormData(event.target);
     fetch('/uploadDestSchemaFile', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            showDestError(data.error);
-        } else {
-            destJsonStructure = data.jsonStructure;
-            showModal("Formato schema di destinazione caricato", JSON.stringify(destJsonStructure, null, 2));
-            const editor = document.getElementById('destJsonStructure');
-            editor.innerHTML = generateDestDroppableCardFILE(destJsonStructure);
-            document.getElementById('destJsonEditor').style.display = 'block';
-            document.getElementById('destJsonEditor').classList.remove('hidden');
-        }
-    })
-    .catch(error => console.error('Errore:', error));
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showDestError(data.error);
+            } else {
+                destJsonStructure = data.jsonStructure;
+                showModal("Formato schema di destinazione caricato", JSON.stringify(destJsonStructure, null, 2));
+                const editor = document.getElementById('destJsonStructure');
+                editor.innerHTML = generateDestDroppableCardFILE(destJsonStructure);
+                document.getElementById('destJsonEditor').style.display = 'block';
+                document.getElementById('destJsonEditor').classList.remove('hidden');
+            }
+        })
+        .catch(error => console.error('Errore:', error));
 }
 
 
@@ -122,9 +133,9 @@ function showMissingFieldsModal(fieldsList) {
     const modal = new bootstrap.Modal(document.getElementById('missingFieldsModal'));
     modal.show();
     const modalTitle = document.getElementById('missingFieldsModalLabel');
-    if(fieldsList.length === 2) {
+    if (fieldsList.length === 2) {
         modalTitle.textContent = "Inserisci i campi generator_id e topic";
-    }else {
+    } else {
         modalTitle.textContent = "Inserisci il campo " + fieldsList[0];
     }
     const modalBody = document.getElementById('missingFieldsModalText');
@@ -172,10 +183,10 @@ function showMissingFieldsModal(fieldsList) {
         // aggiungo il valore alla dropzone corretta con la possibilità di modificare e rimuoverlo
         for (const val of values) {
             let html = `
-                <div class="constant-item draggable-item d-flex align-items-center justify-content-between p-2 mb-2 rounded bg-white shadow-sm" draggable="true" ondragstart="drag(event)" data-key="${val}" id="${val+'-constant'}">
+                <div class="constant-item draggable-item d-flex align-items-center justify-content-between p-2 mb-2 rounded bg-white shadow-sm" draggable="true" ondragstart="drag(event)" data-key="${val}" id="${val + '-constant'}">
                     <span class="key-text fw-bold">${val}</span>
-                    <button class="modify-button btn btn-primary btn-sm" onclick="modifyInputSchemaElement('${val+'-constant'}', '${val}')">Modifica</button>
-                    <button class="remove-button btn btn-danger btn-sm" onclick="removeInputSchemaElement('${val+'-constant'}')">Elimina</button>
+                    <button class="modify-button btn btn-primary btn-sm" onclick="modifyInputSchemaElement('${val + '-constant'}', '${val}')">Modifica</button>
+                    <button class="remove-button btn btn-danger btn-sm" onclick="removeInputSchemaElement('${val + '-constant'}')">Elimina</button>
                 </div>
             `;
             dropzones[i].innerHTML += html;
@@ -238,10 +249,9 @@ function generateInputSchemaEditor(jsonStructure, parentKey = '') {
     for (let key in jsonStructure) {
         let currentKey = parentKey ? `${parentKey}.${key}` : key;
         const value = jsonStructure[key];
-        if(currentKey.includes('[') && currentKey.includes(']')) { 
+        if (currentKey.includes('[') && currentKey.includes(']')) {
             currentKey = currentKey.substring(0, currentKey.indexOf('['));
             currentKey = currentKey + '.' + key
-            console.log(currentKey)
         }
         if (Array.isArray(value)) {
             // Se la proprietà è un array
@@ -302,12 +312,13 @@ function generateInputSchemaEditor(jsonStructure, parentKey = '') {
     return html;
 }
 
-    
+
 // Funzione per rimuovere un elemento dato il suo ID unico
 function removeInputSchemaElement(uniqueId) {
     const item = document.getElementById(uniqueId);
     if (item) {
         item.remove();
+        removedElements.push(uniqueId);
     }
 }
 
@@ -326,7 +337,7 @@ function generateDestDroppableCardPOLIMI(destJsonStructure) {
                 <div class="card-body">
                     <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
         `;
-        if(key == "generator_id" || key == "topic") {
+        if (key == "generator_id" || key == "topic") {
             html += `<button class="btn btn-primary" id="buttonAdd" onclick="showMissingFieldsModal(['${key}'])">+</button>`;
         }
         html += `</div></div>`;
@@ -338,8 +349,8 @@ function generateDestDroppableCardPOLIMI(destJsonStructure) {
 // Funzione per generare il codice necessario per creare le card droppabili dei campi per SCP
 function generateDestDroppableCardSCP(destJsonStructure) {
     let html = '';
-    for(let key in destJsonStructure) {
-        if(key == "data") {
+    for (let key in destJsonStructure) {
+        if (key == "data") {
             const propertyDefinitions = destJsonStructure?.data?.UrbanDataset?.specification?.properties?.propertyDefinition;
             if (Array.isArray(propertyDefinitions)) {
                 // Itera su ogni proprietà definita
@@ -360,7 +371,7 @@ function generateDestDroppableCardSCP(destJsonStructure) {
                     `;
                 });
             }
-        }else {
+        } else {
             html += `
             <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
                 <div class="card-header text-white">
@@ -373,8 +384,8 @@ function generateDestDroppableCardSCP(destJsonStructure) {
         `;
         }
     }
-    
-    
+
+
     return html;
 }
 
@@ -395,12 +406,11 @@ function generateDestDroppableCardFILE(destJsonStructure, parentKey = '') {
                         <p class="card-title">${key} [</p>
                     </div>
                     <div class="card-body">
-                        <div class="dropzone" id="dropzone-${currentKey}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             `;
 
             // Itera sugli elementi dell'array
-            value.forEach((item, index) => {
-                const arrayItemKey = `${currentKey}[${index}]`;
+            value.forEach((item) => {
+                const arrayItemKey = `${currentKey}`;
 
                 if (typeof item === 'object' && item !== null) {
                     // Ricorsione per gli oggetti all'interno dell'array
@@ -449,7 +459,7 @@ function generateDestDroppableCardFILE(destJsonStructure, parentKey = '') {
                     <div class="card-body">
                         <div class="dropzone" id="dropzone-${currentKey}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             `;
-            if(key == "generator_id" || key == "topic" || key == "generatorId" || key == "generatorid") {
+            if (key == "generator_id" || key == "topic" || key == "generatorId" || key == "generatorid") {
                 html += `<button class="btn btn-primary" id="buttonAdd" onclick="showMissingFieldsModal(['${key}'])">+</button>`;
             }
             html += `</div></div>`;
@@ -464,7 +474,7 @@ function generateDestDroppableCardFILE(destJsonStructure, parentKey = '') {
 function allowDrop(ev) {
     ev.preventDefault();
 }
-  
+
 
 // Funzione per gestire il drag
 function drag(ev) {
@@ -485,7 +495,7 @@ function drop(ev) {
             // Aggiungo l'elemento alla dropzone degli attributi
             ev.target.appendChild(draggedElement);
             // Aggiungo i campi per valore e unità di misura solo se è la dropzone degli attributi
-            if(ev.target.id === "dropzone-data") {
+            if (ev.target.id === "dropzone-data") {
                 // Se è un array aggiungo unità a ogni sottoelemento
                 if (draggedElement.classList.contains("array-container")) {
                     // seleziono tutti gli elementi dell'array
@@ -544,10 +554,10 @@ function addUnitInput(draggedElement) {
     const unitInput = document.createElement("input");
     unitInput.id = draggedElement.id;
     unitInput.classList.add("form-control", "me-2");
-    const elementName = draggedElement.id.split('.'); 
+    const elementName = draggedElement.id.split('.');
     const lastIndex = elementName.length - 1;
     // suggerimento dell'unità di misura
-    switch(elementName[lastIndex]) {
+    switch (elementName[lastIndex]) {
         case "volume" || "volume":
             unitInput.placeholder = "m^3"
             break;
@@ -578,7 +588,7 @@ function addUnitInput(draggedElement) {
 function restoreToOrigin(element, idDropzone) {
     const originSection = document.getElementById("inputJsonStructure");
     const dropzones = document.querySelectorAll('[id^="dropzone"]');
-    if(element.id.includes('[') && element.id.includes(']')){
+    if (element.id.includes('[') && element.id.includes(']')) {
         indexStart = element.id.indexOf('[');
         indexEnd = element.id.indexOf(']');
         element.id = element.id.slice(0, indexStart) + element.id.slice(indexEnd + 1);
@@ -679,7 +689,7 @@ function restoreToOrigin(element, idDropzone) {
 // Funzione per aggiustare l'altezza della dropzone e ripristinare la scritta iniziale se vuota
 function adjustDropzoneHeight(dropzone) {
     const children = dropzone.children;
-    const dropzoneHeight = 60 + (children.length * 60); 
+    const dropzoneHeight = 60 + (children.length * 60);
     dropzone.style.minHeight = `${dropzoneHeight}px`;
     dropzone.style.maxHeight = "300px";
     dropzone.style.overflowY = "auto";
@@ -687,64 +697,90 @@ function adjustDropzoneHeight(dropzone) {
 
 
 // Funzione per raccolgiere il mapping e inviarlo al server (POLIMI)
-document.getElementById('mapButton').onclick = function(event) {
+document.getElementById('mapButton').onclick = function (event) {
     event.preventDefault();
-    const dropzones = document.querySelectorAll('[id^="dropzone"]');
     const mappingData = {};
-    // Controllo per i campi mancanti
-    const generatorDropzone = document.getElementById('dropzone-generator_id');
-    const topicDropzone = document.getElementById('dropzone-topic');
-    const missingFields = [];
-    if (generatorDropzone.childElementCount === 0) missingFields.push('generator_id');
-    if (topicDropzone.childElementCount === 0) missingFields.push('topic');
-    // li faccio inserire all'utente
-    if (missingFields.length > 0) {
-        showMissingFieldsModal(missingFields);
-        return;
-    }
-    dropzones.forEach(dropzone => {
-        const dropzoneId = dropzone.id.replace('dropzone-', '');
-        // dropzone degli attributi
-        if (dropzoneId === 'data') {
-            mappingData[dropzoneId] = [];
-            const children = dropzone.children;
-            for (const child of children) {
-                const key = child.dataset.key;
-                if(key) {
-                    const extractedData = extractRecursive(key, inputJsonStructure[key]);
-                    extractedData.forEach(({ key: extractedKey, value: extractedValue, isArrayValue}) => {
-                        // Se la chiave è già stata trattata come array, evito duplicazioni
-                        if (!mappingData[dropzoneId].some(item => item.key === extractedKey)) {
-                            // Trovo l'input associato alla chiave
-                            const correspondingInput = child.querySelector(`input[id="${extractedKey}"]`)
-                            // Valore di default per l'unità
-                            let unit = "None"; 
-                            // Determino l'unità in base all'input trovato
-                            if (correspondingInput) {
-                                if (correspondingInput.value) {
-                                    // Uso il valore dell'input se esiste
-                                    unit = correspondingInput.value; 
-                                } else if (correspondingInput.placeholder && correspondingInput.placeholder !== "Inserisci unità") {
-                                    // Uso il placeholder se valido
-                                    unit = correspondingInput.placeholder; 
+    let endpoint = "";
+    if (selectedSchema === "POLIMI") {
+        endpoint = '/generateMappingFunctionPOLIMI';
+        const dropzones = document.querySelectorAll('[id^="dropzone"]');
+        // Controllo per i campi mancanti
+        const generatorDropzone = document.getElementById('dropzone-generator_id');
+        const topicDropzone = document.getElementById('dropzone-topic');
+        const missingFields = [];
+        if (generatorDropzone.childElementCount === 0) missingFields.push('generator_id');
+        if (topicDropzone.childElementCount === 0) missingFields.push('topic');
+        // li faccio inserire all'utente
+        if (missingFields.length > 0) {
+            showMissingFieldsModal(missingFields);
+            return;
+        }
+        dropzones.forEach(dropzone => {
+            const dropzoneId = dropzone.id.replace('dropzone-', '');
+            // dropzone degli attributi
+            if (dropzoneId === 'data') {
+                mappingData[dropzoneId] = [];
+                const children = dropzone.children;
+                for (const child of children) {
+                    const key = child.dataset.key;
+                    if (key) {
+                        const extractedData = extractRecursive(key, inputJsonStructure[key]);
+                        extractedData.forEach(({ key: extractedKey, value: extractedValue, isArrayValue }) => {
+                            // Se la chiave è già stata trattata come array, evito duplicazioni
+                            if (!mappingData[dropzoneId].some(item => item.key === extractedKey)) {
+                                // Trovo l'input associato alla chiave
+                                const correspondingInput = child.querySelector(`input[id="${extractedKey}"]`)
+                                // Valore di default per l'unità
+                                let unit = "None";
+                                // Determino l'unità in base all'input trovato
+                                if (correspondingInput) {
+                                    if (correspondingInput.value) {
+                                        // Uso il valore dell'input se esiste
+                                        unit = correspondingInput.value;
+                                    } else if (correspondingInput.placeholder && correspondingInput.placeholder !== "Inserisci unità") {
+                                        // Uso il placeholder se valido
+                                        unit = correspondingInput.placeholder;
+                                    }
                                 }
+                                // creo l'oggetto con chiave, valore e unità
+                                mappingData[dropzoneId].push({
+                                    key: extractedKey,
+                                    value: extractedValue,
+                                    unit: unit,
+                                    isArrayValue: isArrayValue
+                                });
                             }
-                            // creo l'oggetto con chiave, valore e unità
-                            mappingData[dropzoneId].push({
-                                key: extractedKey,
-                                value: extractedValue,
-                                unit: unit,
-                                isArrayValue: isArrayValue
-                            });
-                        }
-                    });
+                        });
+                    }
+                }
+
+            } else {
+                // Per altri dropzoneId, memorizzo semplicemente il valore (chiave) come stringa
+                // e il fatto se il valore è stato inserito dall'utente o droppato
+                const children = dropzone.children;
+                for (const child of children) {
+                    const key = child.dataset.key;
+                    const isConstant = child.classList.contains('constant-item');
+                    if (key) {
+                        mappingData[dropzoneId] = {
+                            value: key,
+                            isConstant: isConstant
+                        };
+                    }
                 }
             }
-                
-        } else {
-            // Per altri dropzoneId, memorizzo semplicemente il valore (chiave) come stringa
-            // e il fatto se il valore è stato inserito dall'utente o droppato
+        });
+    } else if (selectedSchema === "SCP") {
+        endpoint = '/generateMappingFunctionSCP';
+        showModal("scehma SCP", "SCP");
+    } else if (selectedSchema === "FILE") {
+        endpoint = '/generateMappingFunctionFILE';
+        const dropzones = document.querySelectorAll('[id^="dropzone"]');
+        dropzones.forEach(dropzone => {
+            if (dropzone.childElementCount === 0) return;
+            const dropzoneId = dropzone.id.replace('dropzone-', '');
             const children = dropzone.children;
+            mappingData[dropzoneId] = [];
             for (const child of children) {
                 const key = child.dataset.key;
                 const isConstant = child.classList.contains('constant-item');
@@ -755,40 +791,46 @@ document.getElementById('mapButton').onclick = function(event) {
                     };
                 }
             }
-        }
-    });
+            ;
+        })
+    }
     console.log(mappingData);
     // Invio il mapping al backend
-    fetch('/generateMappingFunctionPOLIMI', {
+    fetch(endpoint, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(mappingData)
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert(`Errore: ${data.error}`);
-        } else {
-            // Visualizzo la funzione di mapping nel frontend
-            document.getElementById('mappingFunctionContainer').textContent = data.mappingFunction;
-            mappingFunctionContainer.style.display = 'block';
-            document.getElementById('mappingFunctionContainer').classList.remove('hidden');
-            document.getElementById('mappingFunctionContainer').scrollIntoView({ behavior: 'smooth' });
-        }
-    })
-    .catch(error => console.error('Errore:', error));
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(`Errore: ${data.error}`);
+                console.error(data.error);
+            } else {
+                // Visualizzo la funzione di mapping nel frontend
+                document.getElementById('mappingFunctionContainer').textContent = data.mappingFunction;
+                document.getElementById('mappingFunctionContainer').style.display = 'block';
+                document.getElementById('mappingFunctionContainer').classList.remove('hidden');
+                document.getElementById('mappingFunctionContainer').scrollIntoView({ behavior: 'smooth' });
+            }
+        })
+        .catch(error => console.error('Errore:', error));
 };
 
 
 // Funzione per estrarre i valori ricorsivamente (POLIMI)
 function extractRecursive(keyPath, value) {
     const results = [];
+    key = keyPath.split('.').pop();
+    if(removedElements.includes(keyPath)) {
+        return results;
+    }
     // se il valore é un array
     if (Array.isArray(value)) {
         // mi salvo l'array intero e poi itero su tutti i suoi elementi
-        results.push({ key: keyPath, value: value, isArrayValue: false });
+        results.push({ key: keyPath, value: value, isArrayValue: true });
         value.forEach((item) => {
             results.push(...extractRecursive(keyPath, item).map(entry => ({
                 // aggiungo il fatto che sono elementi di un array

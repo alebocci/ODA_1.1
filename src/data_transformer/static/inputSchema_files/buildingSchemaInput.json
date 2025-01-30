@@ -1,0 +1,18 @@
+{
+    "buildingId": "string",
+    "nOfFloors": "int",
+    "builingName": "string",
+    "rooms": [
+             {
+                "area": "float",
+                "nOfPeople": "int",
+                "floor": "int",
+                "roomId": "int"
+            }
+    ],
+    "electricConsumption":  "float",
+    "period": {
+        "start_ts": "date",
+        "end_ts": "date"
+    }
+}

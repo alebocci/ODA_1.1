@@ -1,0 +1,113 @@
+{
+    "data": {
+        "att": {
+            "value": {
+                "buildingId": "1234",
+                "nOfFloors": "5",
+                "buildingName": "edificio 1",
+                "rooms": [
+                    {
+                        "area": "32",
+                        "nOfPeople": "4",
+                        "floor": "2",
+                        "roomId": "1"
+                    },
+                    {
+                        "area": "45",
+                        "nOfPeople": "5",
+                        "floor": "1",
+                        "roomId": "6"
+                    }
+                ],
+                "electricConsumption": "234.78",
+                "period": {
+                    "start_ts": "11:22:33",
+                    "end_ts": "22:33:44"
+                }
+            },
+            "unit": "None"
+        },
+        "buildingId": {
+            "value": "1234",
+            "unit": "None"
+        },
+        "buildingName": {
+            "value": "edificio 1",
+            "unit": "None"
+        },
+        "electricConsumption": {
+            "value": "234.78",
+            "unit": "kWh"
+        },
+        "nOfFloors": {
+            "value": "5",
+            "unit": "None"
+        },
+        "period": {
+            "value": {
+                "start_ts": "11:22:33",
+                "end_ts": "22:33:44"
+            },
+            "unit": "None"
+        },
+        "end_ts": {
+            "value": "22:33:44",
+            "unit": "None"
+        },
+        "start_ts": {
+            "value": "11:22:33",
+            "unit": "None"
+        },
+        "rooms": {
+            "value": [
+                {
+                    "area": "32",
+                    "nOfPeople": "4",
+                    "floor": "2",
+                    "roomId": "1"
+                },
+                {
+                    "area": "45",
+                    "nOfPeople": "5",
+                    "floor": "1",
+                    "roomId": "6"
+                }
+            ],
+            "unit": "None"
+        },
+        "rooms[0]":{
+            "value": 
+                {
+                    "area": "32",
+                    "nOfPeople": "4",
+                    "floor": "2",
+                    "roomId": "1"
+                },
+        	"unit": "None"
+        	},
+        "rooms[1]":{
+            "value": 
+                {
+                    "area": "45",
+                    "nOfPeople": "5",
+                    "floor": "1",
+                    "roomId": "6"
+                },
+        	"unit": "None"
+        	}
+        "rooms[0]['area']": 
+            {
+                "value": "32",
+                "unit": "m^2"
+            },
+        
+        "rooms[0]['floor']": 
+            {
+                "value": "2",
+                "unit": "None"
+            }
+            e così via...
+    "generator_id": "generatore con oggetti",
+    "timestamp": "ora",
+    "topic": "topic con Array"
+}

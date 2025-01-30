@@ -161,6 +161,7 @@ def uploadInputSchema():
         # Cerco di caricare il contenuto come JSON
         try:
             jsonData = json.loads(lines)
+            session['inputSchemaStructure'] = jsonData
         except json.JSONDecodeError as e:
             # se la decodifica fallisce restituisco un errore
             return jsonify({'error': f"Errore nella decodifica del file JSON: {e}"}), 400
@@ -211,6 +212,7 @@ def uploadDestSchemaFile():
             lines = f.read()
         try:
             jsonData = json.loads(lines)
+            session['destSchemaStructure'] = jsonData
         except json.JSONDecodeError as e:
             # se la decodifica fallisce restituisco un errore
             return jsonify({'error': f"Errore nella decodifica del file JSON: {e}"}), 400
@@ -286,3 +288,88 @@ def generateMappingFunctionPOLIMI():
     except Exception as e:
         # Se c'è un errore restituisco un messaggio di errore
         return jsonify({'error': f"Errore durante la generazione della funzione di mapping: {str(e)}"}), 500
+
+
+# endpoint per la generazione della funzione di mapping per FILE generico
+@app.route('/generateMappingFunctionFILE', methods=['POST'])
+def generateMappingFunctionFILE():
+    try:
+        # Ottieni i dati inviati dal frontend
+        mappingData = request.get_json()
+        destSchemaStructure = session.get('destSchemaStructure')
+        print(json.dumps(mappingData, indent=4))
+        # Controllo per timestamp
+        if 'timestamp' not in mappingData:
+            mappingData['timestamp'] = [{'value': 'timestamp di arrivo del dato ad ODA', 'isConstant': True}]
+        
+        def get_array_keys(destSchemaStructure):
+            array_keys = []
+
+            def find_arrays(structure, current_path=""):
+                if isinstance(structure, dict):
+                    for key, value in structure.items():
+                        new_path = f"{current_path}.{key}" if current_path else key
+                        if isinstance(value, list):
+                            array_keys.append(key)
+                        elif isinstance(value, dict):
+                            find_arrays(value, new_path)
+
+            find_arrays(destSchemaStructure)
+            return array_keys
+
+
+        def initialize_mapped_data(destSchemaStructure):
+            """Funzione che inizializza la struttura di mappedData."""
+            def create_structure(structure):
+                if isinstance(structure, dict):
+                    return {key: create_structure(value) for key, value in structure.items()}
+                elif isinstance(structure, list):
+                    return [initialize_mapped_data(structure[0])]
+                else:
+                    return 'None'
+
+            return create_structure(destSchemaStructure)
+
+        arrays = get_array_keys(destSchemaStructure)
+        arrayKey = []
+        # Genera il codice della funzione di mapping
+        functionLines = []
+        functionLines.append("def mappingFunction(inputData):")
+        functionLines.append("    mappedData = " + json.dumps(initialize_mapped_data(destSchemaStructure)))
+        # Funzione ricorsiva per gestire strutture nidificate
+        def process_mapping(key, items, indent_level=1):
+            indent = "    " * indent_level
+            outPathArray = key.split('.')
+            outPath = 'mappedData'
+            for p in outPathArray:
+                outPath += f"['{p}']"
+            if isinstance(items, dict):
+                items = [items]
+            for item in items:
+                # Se è una costante, usa direttamente il valore di 'key'
+                if item.get('isConstant', False):
+                    functionLines.append(f"{indent}{outPath} = '{item.get('value')}'")
+                    continue
+                isArray = any(el in key.split('.') for el in arrays)
+                if isArray:
+                    array, attribute = outPathArray, outPathArray[-1]   
+                    for p in array:
+                        array += f"['{p}']"
+                    functionLines.append(f"{indent}for elem in {array}:")               
+                else:
+                    inPathArray = item.get('value', '').split('.')
+                    inPath = 'inputData'
+                    for p in inPathArray:
+                        inPath += f"['{p}']"
+                    functionLines.append(f"{indent}{outPath} = {inPath}")   
+        # Elabora ogni campo nel mappingData
+        for key, items in mappingData.items():
+            process_mapping(key, items)
+        functionLines.append("    return mappedData")
+        # Unisci il codice in un'unica stringa
+        mappingFunction = "\n".join(functionLines)
+        # ritorno del mappedData
+        return jsonify({'mappingFunction': mappingFunction}), 200
+    except Exception as e:
+        # Se c'è un errore restituisco un messaggio di errore
+        return jsonify({'error': f"Errore durante la generazione della funzione di mapping: {str(e)}"}), 500    
