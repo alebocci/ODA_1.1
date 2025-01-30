@@ -459,9 +459,7 @@ function generateDestDroppableCardFILE(destJsonStructure, parentKey = '') {
                     <div class="card-body">
                         <div class="dropzone" id="dropzone-${currentKey}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             `;
-            if (key == "generator_id" || key == "topic" || key == "generatorId" || key == "generatorid") {
-                html += `<button class="btn btn-primary" id="buttonAdd" onclick="showMissingFieldsModal(['${key}'])">+</button>`;
-            }
+            html += `<button class="btn btn-primary" id="buttonAdd" onclick="showMissingFieldsModal(['${key}'])">+</button>`;
             html += `</div></div>`;
         }
     }

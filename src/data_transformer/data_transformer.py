@@ -294,51 +294,56 @@ def generateMappingFunctionPOLIMI():
 @app.route('/generateMappingFunctionFILE', methods=['POST'])
 def generateMappingFunctionFILE():
     try:
-        # Ottieni i dati inviati dal frontend
+        # Ottengo i dati inviati dal frontend
         mappingData = request.get_json()
+        # salavo in sessione la struttura di destinazione
         destSchemaStructure = session.get('destSchemaStructure')
-        print(json.dumps(mappingData, indent=4))
         # Controllo per timestamp
         if 'timestamp' not in mappingData:
             mappingData['timestamp'] = [{'value': 'timestamp di arrivo del dato ad ODA', 'isConstant': True}]
-        
-        def get_array_keys(destSchemaStructure):
-            array_keys = []
-
-            def find_arrays(structure, current_path=""):
+        # Funzione per ottenere le chiavi che sono array
+        def getArrayKeys(destSchemaStructure):
+            arrayKeys = []
+            # scorro la struttura di destinazione per trovare gli array
+            def findArrays(structure, currentPath=""):
                 if isinstance(structure, dict):
                     for key, value in structure.items():
-                        new_path = f"{current_path}.{key}" if current_path else key
+                        newPath = f"{currentPath}.{key}" if currentPath else key
                         if isinstance(value, list):
-                            array_keys.append(key)
+                            arrayKeys.append(key)
                         elif isinstance(value, dict):
-                            find_arrays(value, new_path)
-
-            find_arrays(destSchemaStructure)
-            return array_keys
-
-
-        def initialize_mapped_data(destSchemaStructure):
-            """Funzione che inizializza la struttura di mappedData."""
-            def create_structure(structure):
+                            findArrays(value, newPath)
+            findArrays(destSchemaStructure)
+            return arrayKeys
+        # controllo quali elementi sono stati mappati dall'utente per inizializzare la struttura di mappedData
+        allAttPresents = mappingData.keys()
+        allAttArray = []
+        for att in allAttPresents:
+            allAtt = att.split('.')
+            for a in allAtt:
+                if a not in allAttArray:
+                    allAttArray.append(a)
+        # inizializzo la struttura di mappedData basata sui campi presenti in mappingData
+        def initializeMappedData(destSchemaStructure):
+            # Funzione ricorsiva per creare la struttura di mappedData
+            def createStructure(structure):
                 if isinstance(structure, dict):
-                    return {key: create_structure(value) for key, value in structure.items()}
+                    return {key: createStructure(value) for key, value in structure.items() if key in allAttArray}
                 elif isinstance(structure, list):
-                    return [initialize_mapped_data(structure[0])]
+                    return []
                 else:
                     return 'None'
-
-            return create_structure(destSchemaStructure)
-
-        arrays = get_array_keys(destSchemaStructure)
-        arrayKey = []
-        # Genera il codice della funzione di mapping
+            return createStructure(destSchemaStructure)
+        # Ottengo le chiavi che sono array
+        arrays = getArrayKeys(destSchemaStructure)
+        # Genero il codice della funzione di mapping
         functionLines = []
         functionLines.append("def mappingFunction(inputData):")
-        functionLines.append("    mappedData = " + json.dumps(initialize_mapped_data(destSchemaStructure)))
+        mappedData = initializeMappedData(destSchemaStructure)
+        functionLines.append("    mappedData = " + json.dumps(mappedData))
         # Funzione ricorsiva per gestire strutture nidificate
-        def process_mapping(key, items, indent_level=1):
-            indent = "    " * indent_level
+        def processMapping(key, items, indentLevel=1):
+            indent = "    " * indentLevel
             outPathArray = key.split('.')
             outPath = 'mappedData'
             for p in outPathArray:
@@ -346,27 +351,37 @@ def generateMappingFunctionFILE():
             if isinstance(items, dict):
                 items = [items]
             for item in items:
-                # Se è una costante, usa direttamente il valore di 'key'
+                # Se è una costante, usa direttamente il valore
                 if item.get('isConstant', False):
                     functionLines.append(f"{indent}{outPath} = '{item.get('value')}'")
                     continue
                 isArray = any(el in key.split('.') for el in arrays)
                 if isArray:
-                    array, attribute = outPathArray, outPathArray[-1]   
-                    for p in array:
-                        array += f"['{p}']"
-                    functionLines.append(f"{indent}for elem in {array}:")               
+                    inPathArray = item.get('value', '').split('.')
+                    arrayIn, attribute = inPathArray[:-1], inPathArray[-1]
+                    arrayOut, attribute = outPathArray[:-1], outPathArray[-1]
+                    inPath = 'inputData'
+                    outPath = 'mappedData'
+                    for p in arrayIn:
+                        inPath += f"['{p}']"
+                    for p in arrayOut:
+                        outPath += f"['{p}']"
+                    # Inizializzo l'array una sola volta
+                    if not any(line.startswith(f"{indent}{outPath} = [{{}} for _ in range(len({inPath}))]") for line in functionLines):
+                        functionLines.append(f"{indent}{outPath} = [{{}} for _ in range(len({inPath}))]")
+                    functionLines.append(f"{indent}for i,elem in enumerate({inPath}):")
+                    functionLines.append(f"{indent}    {outPath}[i]['{attribute}'] = {inPath}[i]['{attribute}']")               
                 else:
                     inPathArray = item.get('value', '').split('.')
                     inPath = 'inputData'
                     for p in inPathArray:
                         inPath += f"['{p}']"
                     functionLines.append(f"{indent}{outPath} = {inPath}")   
-        # Elabora ogni campo nel mappingData
+        # Elaboro ogni campo nel mappingData
         for key, items in mappingData.items():
-            process_mapping(key, items)
+            processMapping(key, items)
         functionLines.append("    return mappedData")
-        # Unisci il codice in un'unica stringa
+        # Unisco il codice in un'unica stringa
         mappingFunction = "\n".join(functionLines)
         # ritorno del mappedData
         return jsonify({'mappingFunction': mappingFunction}), 200
