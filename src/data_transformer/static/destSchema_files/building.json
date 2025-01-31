@@ -1,0 +1,24 @@
+{
+    "buildingId": "9378",
+    "nOfFloors": 8,
+    "builingName": "Edificio T",
+    "rooms": [
+             {
+                "area": 28,
+                "nOfPeople": 5,
+                "floor": 0,
+                "roomId": 1
+            },
+            {
+                "area": 30,
+                "nOfPeople": 6,
+                "floor": 0,
+                "roomId": 2
+            }
+    ],
+    "electricConsumption": 449.2,
+    "period": {
+        "start_ts": "2024-07-20T00:00",
+        "end_ts": "2024-07-20T22:12"
+    }
+}

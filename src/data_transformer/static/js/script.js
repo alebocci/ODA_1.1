@@ -4,6 +4,8 @@ let destJsonStructure = {};
 let removedElements = [];
 let selectedSchema;
 let lastSubmitted = null;
+let alwaysPresent = ['timestamp', 'generator_id', 'topic'];
+let scpRequired = ['latitude', 'longitude', 'timeZone', 'timestamp', 'BuildingID', 'BuildingName', 'ElectricConsumption', 'period'];
 
 // funzione per il caricamento del file JSON con lo schema di input
 document.getElementById('uploadInputSchema').onsubmit = function (event) {
@@ -332,7 +334,7 @@ function generateDestDroppableCardPOLIMI(destJsonStructure) {
         html += `
             <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
                 <div class="card-header text-white">
-                    <p class="card-title">${key}</p>
+                    <p class="card-title">${key} ${key === 'data' ? ' {' : ''}</p>
                 </div>
                 <div class="card-body">
                     <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
@@ -340,38 +342,18 @@ function generateDestDroppableCardPOLIMI(destJsonStructure) {
         if (key == "generator_id" || key == "topic") {
             html += `<button class="btn btn-primary" id="buttonAdd" onclick="showMissingFieldsModal(['${key}'])">+</button>`;
         }
-        html += `</div></div>`;
+        html += `</div>${key === 'data' ? '<div class="object-footer text-start key-text fw-bold">}</div>' : ''}</div>`;
     }
     return html;
 }
 
 
 // Funzione per generare il codice necessario per creare le card droppabili dei campi per SCP
-function generateDestDroppableCardSCP(destJsonStructure) {
+function generateDestDroppableCardSCP(destJsonStructure, parentKey = '') {
     let html = '';
-    for (let key in destJsonStructure) {
-        if (key == "data") {
-            const propertyDefinitions = destJsonStructure?.data?.UrbanDataset?.specification?.properties?.propertyDefinition;
-            if (Array.isArray(propertyDefinitions)) {
-                // Itera su ogni proprietà definita
-                propertyDefinitions.forEach((property) => {
-                    const propertyName = property.propertyName || "Unknown";
-                    const unitOfMeasure = property.unitOfMeasure || "Unknown";
 
-                    // Crea una card per ogni proprietà
-                    html += `
-                        <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${propertyName}">
-                            <div class="card-header text-white">
-                                <p class="card-title">${propertyName}</p>
-                            </div>
-                            <div class="card-body">
-                                <div class="dropzone" id="dropzone-${propertyName}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-        } else {
+    for (let key in destJsonStructure) {
+        if(key != 'data') {
             html += `
             <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
                 <div class="card-header text-white">
@@ -379,21 +361,71 @@ function generateDestDroppableCardSCP(destJsonStructure) {
                 </div>
                 <div class="card-body">
                     <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            `;
+            if (key == "generator_id" || key == "topic") {
+                html += `<button class="btn btn-primary" id="buttonAdd" onclick="showMissingFieldsModal(['${key}'])">+</button>`;
+            }
+            html += `</div></div>`;
+        }else {
+            html +=  `
+                    <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-data">
+                        <div class="card-header text-white">
+                            <p class="card-title">data {</p>
+                        </div>
+                        <div class="card-body">`;
+            for(let key of scpRequired){
+                html += `
+                <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
+                    <div class="card-header text-white">
+                        <p class="card-title">${key}</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+            }
+            html += `</div>
+                        <div class="object-footer text-start key-text fw-bold">}</div>
+                    </div>`;
         }
     }
-
-
     return html;
 }
 
 
 // Funzione per generare il codice necessario per creare le card droppabili dei campi per un FILE generico
-function generateDestDroppableCardFILE(destJsonStructure, parentKey = '') {
+function generateDestDroppableCardFILE(destJsonStructure, parentKey = '', isRoot=true) {
     let html = '';
-
+    if(isRoot) {
+        html +=  `
+            <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-data">
+                <div class="card-header text-white">
+                    <p class="card-title">data {</p>
+                </div>
+                <div class="card-body">
+                    ${generateDestDroppableCardFILE(destJsonStructure, parentKey, false)}
+                </div>
+                <div class="object-footer text-start key-text fw-bold">}</div>
+            </div>
+            `;
+        for(let key of alwaysPresent){
+            html += `
+                    <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
+                        <div class="card-header text-white">
+                            <p class="card-title">${key}</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                            ${(key === 'generator_id' || key === 'topic') ? `<button class="btn btn-primary" id="buttonAdd" onclick="showMissingFieldsModal(['${key}'])">+</button>` : ''}
+                        </div>
+                    </div>
+                `;
+        }
+        
+        return html;
+    }
+    
     for (let key in destJsonStructure) {
         let currentKey = parentKey ? `${parentKey}.${key}` : key;
         let value = destJsonStructure[key];
@@ -414,7 +446,7 @@ function generateDestDroppableCardFILE(destJsonStructure, parentKey = '') {
 
                 if (typeof item === 'object' && item !== null) {
                     // Ricorsione per gli oggetti all'interno dell'array
-                    html += generateDestDroppableCardFILE(item, arrayItemKey);
+                    html += generateDestDroppableCardFILE(item, arrayItemKey, false);
                 } else {
                     // Genera una card per i valori primitivi
                     html += `
@@ -444,7 +476,7 @@ function generateDestDroppableCardFILE(destJsonStructure, parentKey = '') {
                         <p class="card-title">${key} {</p>
                     </div>
                     <div class="card-body">
-                        ${generateDestDroppableCardFILE(value, currentKey)}
+                        ${generateDestDroppableCardFILE(value, currentKey, false)}
                     </div>
                     <div class="object-footer text-start key-text fw-bold">}</div>
                 </div>
@@ -459,11 +491,9 @@ function generateDestDroppableCardFILE(destJsonStructure, parentKey = '') {
                     <div class="card-body">
                         <div class="dropzone" id="dropzone-${currentKey}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             `;
-            html += `<button class="btn btn-primary" id="buttonAdd" onclick="showMissingFieldsModal(['${key}'])">+</button>`;
             html += `</div></div>`;
         }
     }
-
     return html;
 }
 
@@ -699,20 +729,20 @@ document.getElementById('mapButton').onclick = function (event) {
     event.preventDefault();
     const mappingData = {};
     let endpoint = "";
+    const dropzones = document.querySelectorAll('[id^="dropzone"]');
+    // Controllo per i campi mancanti
+    const generatorDropzone = document.getElementById('dropzone-generator_id');
+    const topicDropzone = document.getElementById('dropzone-topic');
+    const missingFields = [];
+    if (generatorDropzone.childElementCount === 0) missingFields.push('generator_id');
+    if (topicDropzone.childElementCount === 0) missingFields.push('topic');
+    // li faccio inserire all'utente
+    if (missingFields.length > 0) {
+        showMissingFieldsModal(missingFields);
+        return;
+    }
     if (selectedSchema === "POLIMI") {
         endpoint = '/generateMappingFunctionPOLIMI';
-        const dropzones = document.querySelectorAll('[id^="dropzone"]');
-        // Controllo per i campi mancanti
-        const generatorDropzone = document.getElementById('dropzone-generator_id');
-        const topicDropzone = document.getElementById('dropzone-topic');
-        const missingFields = [];
-        if (generatorDropzone.childElementCount === 0) missingFields.push('generator_id');
-        if (topicDropzone.childElementCount === 0) missingFields.push('topic');
-        // li faccio inserire all'utente
-        if (missingFields.length > 0) {
-            showMissingFieldsModal(missingFields);
-            return;
-        }
         dropzones.forEach(dropzone => {
             const dropzoneId = dropzone.id.replace('dropzone-', '');
             // dropzone degli attributi

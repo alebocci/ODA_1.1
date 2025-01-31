@@ -32,106 +32,81 @@ SCHEMA_DEST_DEFAULT = {"POLIMI": {
                     "generator_id": "string",
                     "topic": "string",
                     "data": {
-                            "UrbanDataset" : {
-                            "context" : {
-                                "producer" : {
-                                    "id" : "Solution-ID",
-                                    "schemeID" : "SCPS"
+                            "UrbanDataset": {
+                                "context": {
+                                "producer": {
+                                    "id": "Solution-ID"
                                 },
-                                "timeZone" : "UTC+1",
-                                "timestamp" : "2024-11-26T15:09:46",
-                                "coordinates" : {
-                                    "format" : "WGS84-DD",
-                                    "latitude" : 0.0,
-                                    "longitude" : 0.0,
-                                    "height" : 0.0
+                                "timeZone": "UTC+1",
+                                "timestamp": "2024-11-26T15:09:46",
+                                "coordinates": {
+                                    "latitude": 0.0,
+                                    "longitude": 0.0
+                                }
                                 },
-                                "language" : "IT",
-                                "note" : ""
-                            },
-                            "specification" : {
-                                "version" : "2.0",
-                                "id" : {
-                                    "value" : "BuildingElectricConsumption-2.0",
-                                    "schemeID" : "SCPS"
+                                "specification": {
+                                "id": {
+                                    "value": "BuildingElectricConsumption-2.0"
                                 },
-                                "name" : "Building Electric Consumption",
-                                "uri" : "https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption",
-                                "properties" : {
-                                    "propertyDefinition" : [
-                                        {
-                                            "propertyName" : "BuildingID",
-                                            "propertyDescription" : "Identificatore dell'edificio",
-                                            "dataType" : "string",
-                                            "unitOfMeasure" : "dimensionless"
-                                        },
-                                        {
-                                            "propertyName" : "BuildingName",
-                                            "propertyDescription" : "Etichetta associata all'edificio",
-                                            "dataType" : "string",
-                                            "unitOfMeasure" : "dimensionless"
-                                        },
-                                        {
-                                            "propertyName" : "ElectricConsumption",
-                                            "propertyDescription" : "Consumo energia elettrica",
-                                            "dataType" : "double",
-                                            "unitOfMeasure" : "kilowattHour",
-                                            "measurementType" : "average"
-                                        },
-                                        {
-                                            "propertyName" : "period",
-                                            "propertyDescription" : "Periodo durante il quale sono stati rilevati i dati riportati nella riga",
-                                            "subProperties" : {
-                                                "propertyName" : [
-                                                    "start_ts",
-                                                    "end_ts"
-                                                ]
-                                            }
-                                        },
-                                        {
-                                            "propertyName" : "start_ts",
-                                            "propertyDescription" : "Marca temporale indicante l'inizio del periodo",
-                                            "dataType" : "dateTime",
-                                            "unitOfMeasure" : "dimensionless"
-                                        },
-                                        {
-                                            "propertyName" : "end_ts",
-                                            "propertyDescription" : "Marca temporale indicante la fine del periodo",
-                                            "dataType" : "dateTime",
-                                            "unitOfMeasure" : "dimensionless"
+                                "name": "Building Electric Consumption",
+                                "uri": "https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption",
+                                "properties": {
+                                    "propertyDefinition": [
+                                    {
+                                        "propertyName": "BuildingID"
+                                    },
+                                    {
+                                        "propertyName": "BuildingName"
+                                    },
+                                    {
+                                        "propertyName": "ElectricConsumption",
+                                        "dataType": "double"
+                                    },
+                                    {
+                                        "propertyName": "period",
+                                        "subProperties": {
+                                        "propertyName": ["start_ts", "end_ts"]
                                         }
+                                    },
+                                    {
+                                        "propertyName": "start_ts",
+                                        "dataType": "dateTime"
+                                    },
+                                    {
+                                        "propertyName": "end_ts",
+                                        "dataType": "dateTime"
+                                    }
                                     ]
                                 }
-                            },
-                            "values" : {
-                                "line" : [
+                                },
+                                "values": {
+                                "line": [
                                     {
-                                        "id" : 1,
-                                        "period" : {
-                                            "start_ts" : "2000-12-31T00:00:00",
-                                            "end_ts" : "2000-12-31T23:59:00"
+                                    "id": 1,
+                                    "period": {
+                                        "start_ts": "2000-12-31T00:00:00",
+                                        "end_ts": "2000-12-31T23:59:00"
+                                    },
+                                    "property": [
+                                        {
+                                        "name": "BuildingID"
                                         },
-                                        "property" : [
-                                            {
-                                                "name" : "BuildingID",
-                                                "val" : " "
-                                            },
-                                            {
-                                                "name" : "BuildingName",
-                                                "val" : " "
-                                            },
-                                            {
-                                                "name" : "ElectricConsumption",
-                                                "val" : " "
-                                            }
-                                        ]
+                                        {
+                                        "name": "BuildingName"
+                                        },
+                                        {
+                                        "name": "ElectricConsumption"
+                                        }
+                                    ]
                                     }
                                 ]
+                                }
                             }
+                    
+
                         }
                     }
                 }
-            }
 
 # endpoint per la pagina principale
 @app.route('/')
@@ -333,19 +308,31 @@ def generateMappingFunctionFILE():
                     return []
                 else:
                     return 'None'
-            return createStructure(destSchemaStructure)
+            # creo il dato per ODA nella forma corretta
+            return {'data': createStructure(destSchemaStructure)}
         # Ottengo le chiavi che sono array
         arrays = getArrayKeys(destSchemaStructure)
         # Genero il codice della funzione di mapping
         functionLines = []
         functionLines.append("def mappingFunction(inputData):")
         mappedData = initializeMappedData(destSchemaStructure)
+        # creo i campi obbligatori per ODA
+        if 'topic' not in mappedData:
+            mappedData['topic'] = 'None'
+        if 'generator_id' not in mappedData:
+            mappedData['generator_id'] = 'None'
+        if 'timestamp' not in mappedData:
+            mappedData['timestamp'] = 'None'
         functionLines.append("    mappedData = " + json.dumps(mappedData))
         # Funzione ricorsiva per gestire strutture nidificate
         def processMapping(key, items, indentLevel=1):
             indent = "    " * indentLevel
             outPathArray = key.split('.')
-            outPath = 'mappedData'
+            # creo il percorso in maniera corretta per evitare di accedere a valori sbagliati 
+            if outPathArray[-1] == 'topic' or outPathArray[-1] == 'generator_id' or outPathArray[-1] == 'timestamp':
+                outPath = 'mappedData'
+            else:
+                outPath = "mappedData['data']"
             for p in outPathArray:
                 outPath += f"['{p}']"
             if isinstance(items, dict):
@@ -361,7 +348,8 @@ def generateMappingFunctionFILE():
                     arrayIn, attribute = inPathArray[:-1], inPathArray[-1]
                     arrayOut, attribute = outPathArray[:-1], outPathArray[-1]
                     inPath = 'inputData'
-                    outPath = 'mappedData'
+                    # gli array sono per forza all'interno del campo data quindi inizializzo il percorso da lì
+                    outPath = "mappedData['data']"
                     for p in arrayIn:
                         inPath += f"['{p}']"
                     for p in arrayOut:
