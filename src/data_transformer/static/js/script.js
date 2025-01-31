@@ -349,7 +349,7 @@ function generateDestDroppableCardPOLIMI(destJsonStructure) {
 
 
 // Funzione per generare il codice necessario per creare le card droppabili dei campi per SCP
-function generateDestDroppableCardSCP(destJsonStructure, parentKey = '') {
+function generateDestDroppableCardSCP(destJsonStructure) {
     let html = '';
 
     for (let key in destJsonStructure) {
