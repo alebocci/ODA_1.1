@@ -130,61 +130,75 @@ function showModal(title, text) {
 }
 
 
-// mostra il modal per i campi mancanti
+// Mostra il modal per i campi mancanti
 function showMissingFieldsModal(fieldsList) {
     const modal = new bootstrap.Modal(document.getElementById('missingFieldsModal'));
     modal.show();
     const modalTitle = document.getElementById('missingFieldsModalLabel');
-    if (fieldsList.length === 2) {
-        modalTitle.textContent = "Inserisci i campi generator_id e topic";
-    } else {
-        modalTitle.textContent = "Inserisci il campo " + fieldsList[0];
-    }
+    modalTitle.textContent = fieldsList.length >= 2 ? 
+        "Inserisci i campi mancanti obbligatori per ODA" : 
+        "Inserisci il campo " + fieldsList[0];
+
     const modalBody = document.getElementById('missingFieldsModalText');
     modalBody.innerHTML = '';
-    // Creo un contenitore per gli input
+
     const container = document.createElement('div');
     container.classList.add('container', 'd-flex', 'flex-column');
     container.id = 'missingFieldsContainer';
     modalBody.appendChild(container);
-    // Aggiungo un input per ciascun campo mancante
-    for (const field of fieldsList) {
+
+    fieldsList.forEach(field => {
         const input = document.createElement('input');
         input.type = 'text';
         input.classList.add('form-control', 'mb-2');
         input.placeholder = "Inserisci " + field;
         input.dataset.fieldName = field;
         container.appendChild(input);
-    }
+    });
+
     const dropzones = fieldsList.map(field => document.getElementById('dropzone-' + field));
-    // Aggiungo l'evento onclick al bottone per verificare e aggiungere i campi
+
     document.getElementById('missingFieldsModalButton').onclick = () => {
         const inputs = document.querySelectorAll('#missingFieldsContainer input');
-        let allFilled = true;
-        // Verifica che nessun campo sia vuoto
+        let allValid = true;
+        const errorMessages = [];
+
         inputs.forEach(input => {
-            if (input.value.trim() === '') {
-                allFilled = false;
+            const fieldName = input.dataset.fieldName;
+            const value = input.value.trim();
+            input.classList.remove('is-invalid');
+
+            if (!value) {
+                allValid = false;
                 input.classList.add('is-invalid');
+                errorMessages.push(`Il campo ${fieldName} non può essere vuoto.`);
             } else {
-                input.classList.remove('is-invalid');
+                if ((fieldName === 'start_ts' || fieldName === 'end_ts') && !isValidDate(value)) {
+                    allValid = false;
+                    input.classList.add('is-invalid');
+                    errorMessages.push(`Il campo ${fieldName} deve essere una data valida (YYYY-MM-DD o YYYY-MM-DDTHH:MM:SS).`);
+                }
+                if ((fieldName === 'latitude' || fieldName === 'longitude') && !isValidCoordinate(fieldName, value)) {
+                    allValid = false;
+                    input.classList.add('is-invalid');
+                    errorMessages.push(`Il campo ${fieldName} deve essere un numero valido.`);
+                }
             }
         });
-        // controllo se tutti i campi sono pieni
-        if (!allFilled) {
-            const errorMessage = document.createElement('div');
-            errorMessage.classList.add('alert', 'alert-danger', 'mt-2');
-            errorMessage.textContent = "Per favore, riempi tutti i campi prima di procedere.";
+
+        if (!allValid) {
+            const errorMessageDiv = document.createElement('div');
+            errorMessageDiv.classList.add('alert', 'alert-danger', 'mt-2');
+            errorMessageDiv.innerHTML = errorMessages.join('<br>');
             if (!modalBody.querySelector('.alert')) {
-                modalBody.appendChild(errorMessage);
+                modalBody.appendChild(errorMessageDiv);
             }
             return;
         }
-        const values = Array.from(inputs).map(input => input.value.trim());
-        let i = 0;
-        // aggiungo il valore alla dropzone corretta con la possibilità di modificare e rimuoverlo
-        for (const val of values) {
-            let html = `
+
+        inputs.forEach((input, i) => {
+            const val = input.value.trim();
+            const html = `
                 <div class="constant-item draggable-item d-flex align-items-center justify-content-between p-2 mb-2 rounded bg-white shadow-sm" draggable="true" ondragstart="drag(event)" data-key="${val}" id="${val + '-constant'}">
                     <span class="key-text fw-bold">${val}</span>
                     <button class="modify-button btn btn-primary btn-sm" onclick="modifyInputSchemaElement('${val + '-constant'}', '${val}')">Modifica</button>
@@ -192,10 +206,26 @@ function showMissingFieldsModal(fieldsList) {
                 </div>
             `;
             dropzones[i].innerHTML += html;
-            i++;
-        }
+        });
+
+        document.getElementById('mapButton').classList.remove('hidden');
         modal.hide();
     };
+}
+
+function isValidDate(dateString) {
+    const regex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$/;
+    if (!regex.test(dateString)) return false;
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+}
+
+function isValidCoordinate(fieldName, value) {
+    const numericValue = parseFloat(value);
+    if (isNaN(numericValue)) return false;
+    if (fieldName === 'latitude') return numericValue >= -90 && numericValue <= 90;
+    if (fieldName === 'longitude') return numericValue >= -180 && numericValue <= 180;
+    return true;
 }
 
 
@@ -374,16 +404,47 @@ function generateDestDroppableCardSCP(destJsonStructure) {
                         </div>
                         <div class="card-body">`;
             for(let key of scpRequired){
-                html += `
-                <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
-                    <div class="card-header text-white">
-                        <p class="card-title">${key}</p>
-                    </div>
-                    <div class="card-body">
-                        <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                    </div>
-                </div>
-            `;
+                if(key == 'period'){
+                    html +=  `
+                                <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-period">
+                                    <div class="card-header text-white">
+                                        <p class="card-title">period {</p>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-start_ts">
+                                            <div class="card-header text-white">
+                                                <p class="card-title">start_ts</p>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="dropzone" id="dropzone-start_ts" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-end_ts">
+                                            <div class="card-header text-white">
+                                                <p class="card-title">end_ts</p>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="dropzone" id="dropzone-end_ts" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="object-footer text-start key-text fw-bold">}</div>
+                                </div>
+                            `;
+                }else {
+                    html += `
+                            <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
+                                <div class="card-header text-white">
+                                    <p class="card-title">${key}</p>
+                                </div>
+                                <div class="card-body">
+                                    <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                                </div>
+                            </div>
+                        `;
+                }
+                
             }
             html += `</div>
                         <div class="object-footer text-start key-text fw-bold">}</div>
@@ -800,7 +861,27 @@ document.getElementById('mapButton').onclick = function (event) {
         });
     } else if (selectedSchema === "SCP") {
         endpoint = '/generateMappingFunctionSCP';
-        showModal("scehma SCP", "SCP");
+        const missingFields = checkRequiredDropzones();
+        if (missingFields.length > 0) {
+            showMissingFieldsModal(missingFields);
+            return;
+        }
+        dropzones.forEach(dropzone => {
+            if (dropzone.childElementCount === 0) return;
+            const dropzoneId = dropzone.id.replace('dropzone-', '');
+            mappingData[dropzoneId] = [];
+            const children = dropzone.children;
+            for (const child of children) {
+                const key = child.dataset.key;
+                const isConstant = child.classList.contains('constant-item');
+                if (key) {
+                    mappingData[dropzoneId] = {
+                        value: key,
+                        isConstant: isConstant
+                    };
+                }
+            }
+        });
     } else if (selectedSchema === "FILE") {
         endpoint = '/generateMappingFunctionFILE';
         const dropzones = document.querySelectorAll('[id^="dropzone"]');
@@ -846,6 +927,30 @@ document.getElementById('mapButton').onclick = function (event) {
         })
         .catch(error => console.error('Errore:', error));
 };
+
+
+// Funzione per verificare che tutte le dropzone richieste per SCP siano mappate
+function checkRequiredDropzones() {
+    const missingFields = [];
+    scpRequired.forEach(field => {
+        if(field == 'period'){
+            const dropzone1 = document.getElementById(`dropzone-start_ts`);
+            if (dropzone1.childElementCount === 0) {
+                missingFields.push('start_ts');
+            }
+            const dropzone2 = document.getElementById(`dropzone-end_ts`);
+            if (dropzone2.childElementCount === 0) {
+                missingFields.push('end_ts');
+            }
+        }else {
+            const dropzone = document.getElementById(`dropzone-${field}`);
+            if (dropzone.childElementCount === 0) {
+                missingFields.push(field);
+            }
+        }
+    });
+    return missingFields;
+}
 
 
 // Funzione per estrarre i valori ricorsivamente (POLIMI)

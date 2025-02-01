@@ -32,78 +32,91 @@ SCHEMA_DEST_DEFAULT = {"POLIMI": {
                     "generator_id": "string",
                     "topic": "string",
                     "data": {
-                            "UrbanDataset": {
-                                "context": {
-                                "producer": {
-                                    "id": "Solution-ID"
-                                },
-                                "timeZone": "UTC+1",
-                                "timestamp": "2024-11-26T15:09:46",
-                                "coordinates": {
-                                    "latitude": 0.0,
-                                    "longitude": 0.0
-                                }
-                                },
-                                "specification": {
-                                "id": {
-                                    "value": "BuildingElectricConsumption-2.0"
-                                },
-                                "name": "Building Electric Consumption",
-                                "uri": "https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption",
-                                "properties": {
-                                    "propertyDefinition": [
-                                    {
-                                        "propertyName": "BuildingID"
+                            "UrbanDataset" : {
+                                "context" : {
+                                    "producer" : {
+                                        "id" : "Solution-ID"
                                     },
-                                    {
-                                        "propertyName": "BuildingName"
-                                    },
-                                    {
-                                        "propertyName": "ElectricConsumption",
-                                        "dataType": "double"
-                                    },
-                                    {
-                                        "propertyName": "period",
-                                        "subProperties": {
-                                        "propertyName": ["start_ts", "end_ts"]
-                                        }
-                                    },
-                                    {
-                                        "propertyName": "start_ts",
-                                        "dataType": "dateTime"
-                                    },
-                                    {
-                                        "propertyName": "end_ts",
-                                        "dataType": "dateTime"
+                                    "timeZone" : "UTC+1",
+                                    "timestamp" : "2024-11-26T15:09:46",
+                                    "coordinates" : {
+                                        
+                                        "latitude" : 0.0,
+                                        "longitude" : 0.0
                                     }
-                                    ]
-                                }
                                 },
-                                "values": {
-                                "line": [
-                                    {
-                                    "id": 1,
-                                    "period": {
-                                        "start_ts": "2000-12-31T00:00:00",
-                                        "end_ts": "2000-12-31T23:59:00"
+                                "specification" : {
+                                    "id" : {
+                                        "value" : "BuildingElectricConsumption-2.0"
                                     },
-                                    "property": [
+                                    "name" : "Building Electric Consumption",
+                                    "uri" : "https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption",
+                                    "properties" : {
+                                        "propertyDefinition" : [
+                                            {
+                                                "propertyName" : "BuildingID",
+                                                "dataType" : "string",
+                                                "unitOfMeasure" : "dimensionless"
+                                            },
+                                            {
+                                                "propertyName" : "BuildingName",
+                                                "dataType" : "string",
+                                                "unitOfMeasure" : "dimensionless"
+                                            },
+                                            {
+                                                "propertyName" : "ElectricConsumption",
+                                                "dataType" : "double",
+                                                "unitOfMeasure" : "kilowattHour",
+                                                "measurementType" : "average"
+                                            },
+                                            {
+                                                "propertyName" : "period",
+                                                "subProperties" : {
+                                                    "propertyName" : [
+                                                        "start_ts",
+                                                        "end_ts"
+                                                    ]
+                                                }
+                                            },
+                                            {
+                                                "propertyName" : "start_ts",
+                                                "dataType" : "dateTime",
+                                                "unitOfMeasure" : "dimensionless"
+                                            },
+                                            {
+                                                "propertyName" : "end_ts",
+                                                "dataType" : "dateTime",
+                                                "unitOfMeasure" : "dimensionless"
+                                            }
+                                        ]
+                                    }
+                                },
+                                "values" : {
+                                    "line" : [
                                         {
-                                        "name": "BuildingID"
-                                        },
-                                        {
-                                        "name": "BuildingName"
-                                        },
-                                        {
-                                        "name": "ElectricConsumption"
+                                            "id" : 1,
+                                            "period" : {
+                                                "start_ts" : "2000-12-31T00:00:00",
+                                                "end_ts" : "2000-12-31T23:59:00"
+                                            },
+                                            "property" : [
+                                                {
+                                                    "name" : "BuildingID",
+                                                    "val" : " "
+                                                },
+                                                {
+                                                    "name" : "BuildingName",
+                                                    "val" : " "
+                                                },
+                                                {
+                                                    "name" : "ElectricConsumption",
+                                                    "val" : " "
+                                                }
+                                            ]
                                         }
                                     ]
-                                    }
-                                ]
                                 }
                             }
-                    
-
                         }
                     }
                 }
@@ -198,7 +211,7 @@ def uploadDestSchemaFile():
         # se ci sono errori restituisco un messaggio di errore
         return jsonify({'error': f"Errore durante il caricamento del file JSON: {e}"}), 500
 
-# endpoint per la generazione della funzione di mapping 
+# endpoint per la generazione della funzione di mapping per POLIMI
 @app.route('/generateMappingFunctionPOLIMI', methods=['POST'])
 def generateMappingFunctionPOLIMI():
     try:
@@ -376,3 +389,120 @@ def generateMappingFunctionFILE():
     except Exception as e:
         # Se c'è un errore restituisco un messaggio di errore
         return jsonify({'error': f"Errore durante la generazione della funzione di mapping: {str(e)}"}), 500    
+    
+
+# endpoint per la generazione della funzione di mapping per SCP
+@app.route('/generateMappingFunctionSCP', methods=['POST'])
+def generateMappingFunctionSCP():
+    try:
+        # Ottieni i dati inviati dal frontend
+        mappingData = request.get_json()
+        schemaInput = session.get('inputSchemaStructure')
+        # estraggo le chiavi che sono array
+         # Funzione ricorsiva per trovare le chiavi che sono array
+        def findArrayKeys(schema, tmp=None):
+            if tmp is None:
+                tmp = []
+                
+            if isinstance(schema, dict):
+                # Per ogni chiave nel dizionario
+                for key, value in schema.items():
+                    # Se il valore è un array o è dichiarato come tale lo aggiungo a tmp e richiamo ricorsivamente
+                    if isinstance(value, list) or (isinstance(value, dict) and value.get('type') == 'array'):
+                        if key not in tmp:
+                            tmp.append(key)
+                    # Continuo la ricerca ricorsiva
+                    findArrayKeys(value, tmp)
+            elif isinstance(schema, list):
+                # Esploro ricorsivamente ogni elemento della lista
+                for item in schema:
+                    findArrayKeys(item, tmp)
+            return tmp
+        # Estraggo le chiavi che sono array
+        arrayKeys = findArrayKeys(schemaInput)
+        # timestamp se non mappato
+        if 'timestamp' not in mappingData:
+            mappingData['timestamp'] = {'value': 'timestamp di arrivo del dato ad ODA', 'isConstant': True}
+        # Genero il codice della funzione di mapping
+        functionLines = []
+        functionLines.append("def mappingFunction(inputData):")
+        functionLines.append("    mappedData = {}")
+        keys = []
+        # Mappo i campi obbligatori per ODA
+        for key in mappingData.keys():
+            if key in ['timestamp', 'generator_id', 'topic']:
+                value = mappingData[key]['value']
+                is_constant = mappingData[key].get('isConstant', False)
+                if is_constant:
+                    functionLines.append(f"    mappedData['{key}'] = '{value}'")
+                else:
+                    functionLines.append(f"    mappedData['{key}'] = inputData.get('{value}')")
+            else:
+                keys.append(key)
+        # funzione per ottenere il percorso del valore nello schema input
+        def getPath(key, mappingData):
+            value = mappingData[key]['value']
+            if mappingData[key]['isConstant']:
+                if key == 'latitude' or key == 'longitude':
+                    return value
+                else:
+                    return f"'{value}'" 
+            else:
+                array = value.split('.')
+                path = 'inputData'
+                for p in array:
+                    if p in arrayKeys:
+                        path += f"['{p}'][0]"
+                    else:
+                        path += f"['{p}']"
+                return path
+        # estraggo i percorsi
+        start = getPath('start_ts', mappingData)
+        end = getPath('end_ts', mappingData)
+        timezone = getPath('timeZone', mappingData)
+        latitude = getPath('latitude', mappingData)
+        longitude = getPath('longitude', mappingData)
+        buildingID = getPath('BuildingID', mappingData)
+        buildingName = getPath('BuildingName', mappingData)
+        electricConsumption = getPath('ElectricConsumption', mappingData)
+        # Mappo in mappedData la struttura di SCP
+        functionLines.append("    mappedData['data'] = {}")
+        functionLines.append("    mappedData['data']['UrbanDataset'] = {}")
+        functionLines.append("    mappedData['data']['UrbanDataset']['context'] = {}")
+        functionLines.append("    mappedData['data']['UrbanDataset']['context']['producer'] = {'id': 'Solution-ID'}")
+        functionLines.append(f"    mappedData['data']['UrbanDataset']['context']['timeZone'] = {timezone}")
+        functionLines.append("    mappedData['data']['UrbanDataset']['context']['timestamp'] = '2024-11-26T15:09:46'")
+        functionLines.append(f"    mappedData['data']['UrbanDataset']['context']['coordinates'] = {{'latitude': {latitude}, 'longitude': {longitude}}}")
+        functionLines.append("    mappedData['data']['UrbanDataset']['specification'] = {}")
+        functionLines.append("    mappedData['data']['UrbanDataset']['specification']['id'] = {'value': 'BuildingElectricConsumption-2.0'}")
+        functionLines.append("    mappedData['data']['UrbanDataset']['specification']['name'] = 'Building Electric Consumption'")
+        functionLines.append("    mappedData['data']['UrbanDataset']['specification']['uri'] = 'https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption'")
+        functionLines.append("    mappedData['data']['UrbanDataset']['specification']['properties'] = {}")
+        functionLines.append("    mappedData['data']['UrbanDataset']['specification']['properties']['propertyDefinition'] = [")
+        functionLines.append("        {'propertyName': 'BuildingID', 'dataType': 'string', 'unitOfMeasure': 'dimensionless'},")
+        functionLines.append("        {'propertyName': 'BuildingName', 'dataType': 'string', 'unitOfMeasure': 'dimensionless'},")
+        functionLines.append("        {'propertyName': 'ElectricConsumption', 'dataType': 'double', 'unitOfMeasure': 'kilowattHour', 'measurementType': 'average'},")
+        functionLines.append("        {'propertyName': 'period', 'subProperties': {'propertyName': ['start_ts', 'end_ts']}},")
+        functionLines.append("        {'propertyName': 'start_ts', 'dataType': 'dateTime', 'unitOfMeasure': 'dimensionless'},")
+        functionLines.append("        {'propertyName': 'end_ts', 'dataType': 'dateTime', 'unitOfMeasure': 'dimensionless'}")
+        functionLines.append("    ]")
+        functionLines.append("    mappedData['data']['UrbanDataset']['values'] = {}")
+        functionLines.append("    mappedData['data']['UrbanDataset']['values']['line'] = [")
+        functionLines.append("        {")
+        functionLines.append("            'id': 1,")
+        functionLines.append(f"            'period': {{'start_ts': {start}, 'end_ts': {end}}},")
+        functionLines.append("            'property': [")
+        functionLines.append(f"                {{'name': 'BuildingID', 'val': {buildingID}}},")
+        functionLines.append(f"                {{'name': 'BuildingName', 'val': {buildingName}}},")
+        functionLines.append(f"                {{'name': 'ElectricConsumption', 'val': {electricConsumption}}}")
+        functionLines.append("            ]")
+        functionLines.append("        }")
+        functionLines.append("    ]")
+        functionLines.append("    return mappedData")
+        # UniscO il codice in un'unica stringa
+        mappingFunction = "\n".join(functionLines)
+        # RestituiSCO la funzione di mapping al frontend
+        return jsonify({'mappingFunction': mappingFunction}), 200
+    except Exception as e:
+        # Se c'è un errore restituisco un messaggio di errore
+        return jsonify({'error': f"Errore durante la generazione della funzione di mapping: {str(e)}"}), 500

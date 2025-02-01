@@ -2,52 +2,42 @@
     "UrbanDataset" : {
         "context" : {
             "producer" : {
-                "id" : "Solution-ID",
-                "schemeID" : "SCPS"
+                "id" : "Solution-ID"
             },
             "timeZone" : "UTC+1",
             "timestamp" : "2024-11-26T15:09:46",
             "coordinates" : {
-                "format" : "WGS84-DD",
+                
                 "latitude" : 0.0,
-                "longitude" : 0.0,
-                "height" : 0.0
-            },
-            "language" : "IT",
-            "note" : ""
+                "longitude" : 0.0
+            }
         },
         "specification" : {
-            "version" : "2.0",
             "id" : {
-                "value" : "BuildingElectricConsumption-2.0",
-                "schemeID" : "SCPS"
+                "value" : "BuildingElectricConsumption-2.0"
             },
-            "name" : "Building Electric\n            Consumption",
+            "name" : "Building Electric Consumption",
             "uri" : "https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption",
             "properties" : {
                 "propertyDefinition" : [
                     {
                         "propertyName" : "BuildingID",
-                        "propertyDescription" : "Identificatore dell'edificio",
                         "dataType" : "string",
                         "unitOfMeasure" : "dimensionless"
                     },
                     {
                         "propertyName" : "BuildingName",
-                        "propertyDescription" : "Etichetta associata all'edificio",
                         "dataType" : "string",
                         "unitOfMeasure" : "dimensionless"
                     },
                     {
                         "propertyName" : "ElectricConsumption",
-                        "propertyDescription" : "Consumo energia elettrica",
                         "dataType" : "double",
                         "unitOfMeasure" : "kilowattHour",
                         "measurementType" : "average"
                     },
                     {
                         "propertyName" : "period",
-                        "propertyDescription" : "Periodo durante il quale sono stati rilevati i dati riportati nella riga",
                         "subProperties" : {
                             "propertyName" : [
                                 "start_ts",
@@ -57,13 +47,11 @@
                     },
                     {
                         "propertyName" : "start_ts",
-                        "propertyDescription" : "Marca temporale indicante l'inizio del periodo",
                         "dataType" : "dateTime",
                         "unitOfMeasure" : "dimensionless"
                     },
                     {
                         "propertyName" : "end_ts",
-                        "propertyDescription" : "Marca temporale indicante la fine del periodo",
                         "dataType" : "dateTime",
                         "unitOfMeasure" : "dimensionless"
                     }
