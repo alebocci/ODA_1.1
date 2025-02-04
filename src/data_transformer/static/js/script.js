@@ -899,7 +899,6 @@ document.getElementById('mapButton').onclick = function (event) {
         dropzones.forEach(dropzone => {
             if (dropzone.childElementCount === 0) return;
             const dropzoneId = dropzone.id.replace('dropzone-', '');
-            console.log(dropzoneId)
             if (dropzoneId === 'timeZone') {
                 // Recupera il valore dal select di timeZone
                 const timeZoneSelect = document.getElementById('dropzone-timeZone');
@@ -945,7 +944,6 @@ document.getElementById('mapButton').onclick = function (event) {
             ;
         })
     }
-    console.log(mappingData);
     // Invio il mapping al backend
     fetch(endpoint, {
         method: 'POST',
