@@ -5,7 +5,7 @@ let removedElements = [];
 let selectedSchema;
 let lastSubmitted = null;
 let alwaysPresent = ['timestamp', 'generator_id', 'topic'];
-let scpRequired = ['latitude', 'longitude', 'timeZone', 'timestamp', 'BuildingID', 'BuildingName', 'ElectricConsumption', 'period'];
+let scpRequired = ['latitude', 'longitude', 'timeZone', 'BuildingID', 'BuildingName', 'ElectricConsumption', 'period'];
 
 // funzione per il caricamento del file JSON con lo schema di input
 document.getElementById('uploadInputSchema').onsubmit = function (event) {
@@ -213,6 +213,8 @@ function showMissingFieldsModal(fieldsList) {
     };
 }
 
+
+// controllo per la validità del formato data 
 function isValidDate(dateString) {
     const regex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?$/;
     if (!regex.test(dateString)) return false;
@@ -220,6 +222,8 @@ function isValidDate(dateString) {
     return !isNaN(date.getTime());
 }
 
+
+// controllo per la validità delle coordinate
 function isValidCoordinate(fieldName, value) {
     const numericValue = parseFloat(value);
     if (isNaN(numericValue)) return false;
@@ -433,18 +437,32 @@ function generateDestDroppableCardSCP(destJsonStructure) {
                                 </div>
                             `;
                 }else {
-                    html += `
+                    if(key == 'timeZone') {
+                        html += `
                             <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
                                 <div class="card-header text-white">
-                                    <p class="card-title">${key}</p>
+                                    <p class="card-title">${key} (UTC+/-n)</p>
                                 </div>
                                 <div class="card-body">
-                                    <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                                    <select class="form-select" id="dropzone-${key}">
+                                        ${generateTimeZoneOptions()}
+                                    </select>
                                 </div>
                             </div>
                         `;
+                    }else {
+                        html += `
+                        <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
+                            <div class="card-header text-white">
+                                <p class="card-title">${key}</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                            </div>
+                        </div>
+                    `;
+                    }
                 }
-                
             }
             html += `</div>
                         <div class="object-footer text-start key-text fw-bold">}</div>
@@ -452,6 +470,18 @@ function generateDestDroppableCardSCP(destJsonStructure) {
         }
     }
     return html;
+}
+
+
+// Funzione per generare le opzioni del select per i fusi orari
+function generateTimeZoneOptions() {
+    const timeZones = [];
+    for (let i = -12; i <= 14; i++) {
+        const sign = i >= 0 ? '+' : '-';
+        const padded = Math.abs(i).toString().padStart(2, '0');
+        timeZones.push(`UTC${sign}${padded}:00`);
+    }
+    return timeZones.map(tz => `<option value="${tz}">${tz}</option>`).join('');
 }
 
 
@@ -869,16 +899,28 @@ document.getElementById('mapButton').onclick = function (event) {
         dropzones.forEach(dropzone => {
             if (dropzone.childElementCount === 0) return;
             const dropzoneId = dropzone.id.replace('dropzone-', '');
-            mappingData[dropzoneId] = [];
-            const children = dropzone.children;
-            for (const child of children) {
-                const key = child.dataset.key;
-                const isConstant = child.classList.contains('constant-item');
-                if (key) {
-                    mappingData[dropzoneId] = {
-                        value: key,
-                        isConstant: isConstant
+            console.log(dropzoneId)
+            if (dropzoneId === 'timeZone') {
+                // Recupera il valore dal select di timeZone
+                const timeZoneSelect = document.getElementById('dropzone-timeZone');
+                if (timeZoneSelect) {
+                    mappingData['timeZone'] = {
+                        value: timeZoneSelect.value,
+                        isConstant: true
                     };
+                }
+            }else {
+                mappingData[dropzoneId] = [];
+                const children = dropzone.children;
+                for (const child of children) {
+                    const key = child.dataset.key;
+                    const isConstant = child.classList.contains('constant-item');
+                    if (key) {
+                        mappingData[dropzoneId] = {
+                            value: key,
+                            isConstant: isConstant
+                        };
+                    }
                 }
             }
         });
@@ -933,6 +975,7 @@ document.getElementById('mapButton').onclick = function (event) {
 function checkRequiredDropzones() {
     const missingFields = [];
     scpRequired.forEach(field => {
+        if(field == 'timeZone') return;
         if(field == 'period'){
             const dropzone1 = document.getElementById(`dropzone-start_ts`);
             if (dropzone1.childElementCount === 0) {

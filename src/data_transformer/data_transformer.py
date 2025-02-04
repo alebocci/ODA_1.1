@@ -432,8 +432,8 @@ def generateMappingFunctionSCP():
         for key in mappingData.keys():
             if key in ['timestamp', 'generator_id', 'topic']:
                 value = mappingData[key]['value']
-                is_constant = mappingData[key].get('isConstant', False)
-                if is_constant:
+                isConstant = mappingData[key].get('isConstant', False)
+                if isConstant:
                     functionLines.append(f"    mappedData['{key}'] = '{value}'")
                 else:
                     functionLines.append(f"    mappedData['{key}'] = inputData.get('{value}')")
@@ -460,6 +460,16 @@ def generateMappingFunctionSCP():
         start = getPath('start_ts', mappingData)
         end = getPath('end_ts', mappingData)
         timezone = getPath('timeZone', mappingData)
+        timestampODA = mappingData.get('timestamp')['value']
+        timestampODAArray = timestampODA.split('.')
+        pathTime = 'inputData'
+        for p in timestampODAArray:
+            pathTime += f"['{p}']"
+        deltaHour = timezone.strip("'").replace('UTC', '').split(':')[0]
+        if deltaHour.startswith('+0') or deltaHour.startswith('-0'):
+            deltaHour = deltaHour[0] + deltaHour[2:]
+        elif deltaHour.startswith('0'):
+            deltaHour = deltaHour[1:]
         latitude = getPath('latitude', mappingData)
         longitude = getPath('longitude', mappingData)
         buildingID = getPath('BuildingID', mappingData)
@@ -471,7 +481,7 @@ def generateMappingFunctionSCP():
         functionLines.append("    mappedData['data']['UrbanDataset']['context'] = {}")
         functionLines.append("    mappedData['data']['UrbanDataset']['context']['producer'] = {'id': 'Solution-ID'}")
         functionLines.append(f"    mappedData['data']['UrbanDataset']['context']['timeZone'] = {timezone}")
-        functionLines.append("    mappedData['data']['UrbanDataset']['context']['timestamp'] = '2024-11-26T15:09:46'")
+        functionLines.append(f"    mappedData['data']['UrbanDataset']['context']['timestamp'] = (datetime.fromisoformat({pathTime}) + timedelta(hours={deltaHour})).isoformat() ")
         functionLines.append(f"    mappedData['data']['UrbanDataset']['context']['coordinates'] = {{'latitude': {latitude}, 'longitude': {longitude}}}")
         functionLines.append("    mappedData['data']['UrbanDataset']['specification'] = {}")
         functionLines.append("    mappedData['data']['UrbanDataset']['specification']['id'] = {'value': 'BuildingElectricConsumption-2.0'}")
