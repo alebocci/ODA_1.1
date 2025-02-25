@@ -39,6 +39,26 @@
         </div>
       </div>
     </div>
+    <!-- Modal per inserire il nome con cui salvare i mapping -->
+    <div class="modal fade" id="saveMappingModal" tabindex="-1" aria-labelledby="saveMappingModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content card">
+          <div class="modal-header card-header">
+            <h5 class="modal-title" id="saveMappingModalLabel">Inserisci il nome da dare alla funzione</h5>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="mappingName" class="form-label">Nome del mapping:</label>
+              <input type="text" class="form-control" id="mappingName" name="mappingName" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            <button type="button" class="btn btn-success" id="nameMappingFunction">Salva ed invia</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- metà dello schema di partenza -->
     <div class="half">
       <!-- Mensaggi di errore -->
@@ -139,6 +159,9 @@
   </div>
   <!-- Container per la funzione di mapping -->
   <pre id="mappingFunctionContainer" class="prettify mt-4 hidden"></pre>
+  <div class="text-center">
+    <button id="saveMapping" class="btn btn-primary mb-3 hidden" onclick="saveMapping()">Invia funzione a ODA</button>
+  </div>
   
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>

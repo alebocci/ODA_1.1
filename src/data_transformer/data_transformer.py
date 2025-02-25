@@ -10,116 +10,24 @@ app.secret_key = 'ODA1.1secret_key'
 # Cartelle per salvare i file di input e output
 INPUT_FOLDER = 'static/inputSchema_files'
 DEST_FOLDER = 'static/destSchema_files'
+DEST_DEFAULT_FOLDER = 'static/destSchema_defaults'
 app.config['INPUT_FOLDER'] = INPUT_FOLDER
 app.config['DEST_FOLDER'] = DEST_FOLDER
+app.config['DEST_DEFAULT_FOLDER'] = DEST_DEFAULT_FOLDER
 # se non esistono creo le cartelle
 os.makedirs(INPUT_FOLDER, exist_ok=True)
 os.makedirs(DEST_FOLDER, exist_ok=True)
+os.makedirs(DEST_DEFAULT_FOLDER, exist_ok=True)
 
-SCHEMA_DEST_DEFAULT = {"POLIMI": {
-                        "timestamp": "integer", 
-                        "generator_id": "string", 
-                        "topic": "string", 
-                        "data": {
-                            "attribute_name": {
-                                "value": "any",
-                                "unit": "string or null"
-                            }
-                        }
-                    },
-            "SCP": {
-                    "timestamp": "integer",
-                    "generator_id": "string",
-                    "topic": "string",
-                    "data": {
-                            "UrbanDataset" : {
-                                "context" : {
-                                    "producer" : {
-                                        "id" : "Solution-ID"
-                                    },
-                                    "timeZone" : "UTC+1",
-                                    "timestamp" : "2024-11-26T15:09:46",
-                                    "coordinates" : {
-                                        
-                                        "latitude" : 0.0,
-                                        "longitude" : 0.0
-                                    }
-                                },
-                                "specification" : {
-                                    "id" : {
-                                        "value" : "BuildingElectricConsumption-2.0"
-                                    },
-                                    "name" : "Building Electric Consumption",
-                                    "uri" : "https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption",
-                                    "properties" : {
-                                        "propertyDefinition" : [
-                                            {
-                                                "propertyName" : "BuildingID",
-                                                "dataType" : "string",
-                                                "unitOfMeasure" : "dimensionless"
-                                            },
-                                            {
-                                                "propertyName" : "BuildingName",
-                                                "dataType" : "string",
-                                                "unitOfMeasure" : "dimensionless"
-                                            },
-                                            {
-                                                "propertyName" : "ElectricConsumption",
-                                                "dataType" : "double",
-                                                "unitOfMeasure" : "kilowattHour",
-                                                "measurementType" : "average"
-                                            },
-                                            {
-                                                "propertyName" : "period",
-                                                "subProperties" : {
-                                                    "propertyName" : [
-                                                        "start_ts",
-                                                        "end_ts"
-                                                    ]
-                                                }
-                                            },
-                                            {
-                                                "propertyName" : "start_ts",
-                                                "dataType" : "dateTime",
-                                                "unitOfMeasure" : "dimensionless"
-                                            },
-                                            {
-                                                "propertyName" : "end_ts",
-                                                "dataType" : "dateTime",
-                                                "unitOfMeasure" : "dimensionless"
-                                            }
-                                        ]
-                                    }
-                                },
-                                "values" : {
-                                    "line" : [
-                                        {
-                                            "id" : 1,
-                                            "period" : {
-                                                "start_ts" : "2000-12-31T00:00:00",
-                                                "end_ts" : "2000-12-31T23:59:00"
-                                            },
-                                            "property" : [
-                                                {
-                                                    "name" : "BuildingID",
-                                                    "val" : " "
-                                                },
-                                                {
-                                                    "name" : "BuildingName",
-                                                    "val" : " "
-                                                },
-                                                {
-                                                    "name" : "ElectricConsumption",
-                                                    "val" : " "
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                }
+
+# Funzione per caricare uno schema specifico dalla caretella di default
+def loadSchema(schemaName):
+    schemaPath = os.path.join(app.config['DEST_DEFAULT_FOLDER'], f"{schemaName}.json")
+    if not os.path.exists(schemaPath):
+        return None  # Schema non trovato
+    with open(schemaPath, 'r') as f:
+        return json.load(f)
+    
 
 # endpoint per la pagina principale
 @app.route('/')
@@ -168,11 +76,12 @@ def uploadDestSchema():
         requestJson = request.get_json()
         # Estrai il valore della destinazione (destSchema, o POLIMI o SCP)
         selectedSchema = requestJson.get('destSchema')
-        if not selectedSchema in SCHEMA_DEST_DEFAULT.keys():
-            # se non c'è il nome dello schema restituisco un errore
-            return jsonify({'error': 'Non esiste lo schema selezionato'}), 400
-        # Schema POLIMI o SCP (successivamente saranno file JSON con la struttura di POLIMI o SCP)
-        jsonStructure = SCHEMA_DEST_DEFAULT[selectedSchema]
+        # carico il json dello schema richiesto
+        jsonStructure = loadSchema(selectedSchema)
+        # se non trovo il nome dello schema restituisco un errore
+        if jsonStructure is None:
+            return jsonify({'error': 'Schema non trovato'}), 404
+        # restituisco la struttura del json al frontend
         return jsonify({'jsonStructure': jsonStructure})
     except Exception as e:
         # Se c'è un errore restituiamo un messaggio di errore
@@ -516,3 +425,18 @@ def generateMappingFunctionSCP():
     except Exception as e:
         # Se c'è un errore restituisco un messaggio di errore
         return jsonify({'error': f"Errore durante la generazione della funzione di mapping: {str(e)}"}), 500
+    
+
+# endpoint per il salvataggio della funzione di mapping e del suo nome
+@app.route('/saveMappingFunction', methods=['POST'])
+def saveMappingFunction():
+    try:
+        # Ottieni i dati inviati dal frontend
+        mappingData = request.get_json()
+        # TODO: inviare la funzione di mapping al nuovo microservizio (ancora da creare) mapping_manager
+               # in modo che possa controllare se il nome è già stato usato e salvare nel suo db le info dest_schema, input_schema, nome e funzione di mapping
+               # o ritornare un errore se il nome è già stato usato.
+        return jsonify({'data': mappingData}), 200
+    except Exception as e:
+        # Se c'è un errore restituisco un messaggio di errore
+        return jsonify({'error': f"Errore durante il salvataggio della funzione di mapping"}), 500

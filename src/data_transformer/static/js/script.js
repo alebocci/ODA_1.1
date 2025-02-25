@@ -962,6 +962,7 @@ document.getElementById('mapButton').onclick = function (event) {
                 document.getElementById('mappingFunctionContainer').textContent = data.mappingFunction;
                 document.getElementById('mappingFunctionContainer').style.display = 'block';
                 document.getElementById('mappingFunctionContainer').classList.remove('hidden');
+                document.getElementById('saveMapping').classList.remove('hidden');
                 document.getElementById('mappingFunctionContainer').scrollIntoView({ behavior: 'smooth' });
             }
         })
@@ -1076,5 +1077,50 @@ function modifyInputSchemaElement(elementId, currentValue) {
             <button class="modify-button btn btn-primary btn-sm" onclick="modifyInputSchemaElement('${elementId}', '${currentValue}')">Modifica</button>
             <button class="remove-button btn btn-danger btn-sm" onclick="removeInputSchemaElement('${elementId}')">Elimina</button>
         `;
+    };
+}
+
+
+// Funzione per salvare il mapping dentro ODA
+function saveMapping() {
+    const modal = new bootstrap.Modal(document.getElementById('saveMappingModal'));
+    modal.show();
+    // Aggiungo un listener per il pulsante "Invia il mapping" nel modal
+    document.getElementById('nameMappingFunction').onclick = function () {
+        // Recupero il nome del mapping inserito dall'utente
+        const mappingName = document.getElementById('mappingName').value.trim();
+        // Verifico che il nome del mapping sia stato inserito
+        if (!mappingName) {
+            alert('Inserisci un nome per il mapping.');
+            return;
+        }
+        // Recupero la funzione di mapping generata
+        const mappingFunction = document.getElementById('mappingFunctionContainer').textContent;
+        // Creo l'oggetto da inviare al backend
+        const mappingData = {
+            mappingName: mappingName,
+            mappingFunction: mappingFunction
+        };
+        modal.hide();
+        // Invio i dati al backend 
+        fetch('/saveMappingFunction', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(mappingData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(`Errore: ${data.error}`);
+            } else {
+                showModal('info', JSON.stringify(data));
+            }
+        })
+        .catch(error => {
+            console.error('Errore:', error);
+            alert('Si è verificato un errore durante il salvataggio del mapping.');
+        });
     };
 }

@@ -101,6 +101,21 @@ services:
       - datapump
       - topicmanager
 
+  data_transformer:
+    build:
+      context: src/data_transformer
+      args:
+        DATA_TRANSFORMER_PORT: ${data_transformer_port}
+    container_name: datatransformer
+    restart: always
+    ports:
+      - 80:${data_transformer_port}
+    environment:
+      DATA_TRANSFORMER_PORT: ${data_transformer_port}
+    depends_on:
+      - apigateway
+
+
 volumes:
   influxdbdata:
   influxdbconfig:
