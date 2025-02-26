@@ -96,22 +96,22 @@ services:
       KAFKA_ADDRESS: ${kafka_address}
       DB_MANAGER_PORT: ${db_manager_port}
       TOPIC_MANAGER_PORT: ${topic_manager_port}
-      DATA_TRANSFORMER_PORT: ${data_transformer_port}
+      WEB_DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
     depends_on:
       - datapump
       - topicmanager
 
-  data_transformer:
+  web_data_transformer:
     build:
-      context: src/data_transformer
+      context: src/web_data_transformer
       args:
-        DATA_TRANSFORMER_PORT: ${data_transformer_port}
-    container_name: datatransformer
+        WEB_DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
+    container_name: webdatatransformer
     restart: always
     ports:
-      - 80:${data_transformer_port}
+      - 80:${web_data_transformer_port}
     environment:
-      DATA_TRANSFORMER_PORT: ${data_transformer_port}
+      DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
     depends_on:
       - apigateway
 
