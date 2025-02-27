@@ -1,10 +1,14 @@
 from datetime import datetime
 import json
+import logging
 import os
+import sys
 from flask import Flask, render_template, request, jsonify, session
+import requests
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 # Configurazione della sessione
 app.secret_key = 'ODA1.1secret_key'
 # Cartelle per salvare i file di input e output
@@ -18,7 +22,8 @@ app.config['DEST_DEFAULT_FOLDER'] = DEST_DEFAULT_FOLDER
 os.makedirs(INPUT_FOLDER, exist_ok=True)
 os.makedirs(DEST_FOLDER, exist_ok=True)
 os.makedirs(DEST_DEFAULT_FOLDER, exist_ok=True)
-
+DATA_TRANSFORMER_PORT = os.environ["DATA_TRANSFORMER_PORT"]
+DATA_TRANSFORMER_URL = "http://datatransformer:"+DATA_TRANSFORMER_PORT
 
 # Funzione per caricare uno schema specifico dalla caretella di default
 def loadSchema(schemaName):
@@ -32,6 +37,7 @@ def loadSchema(schemaName):
 # endpoint per la pagina principale
 @app.route('/')
 def index():
+    logging.info("Serving web page")
     return render_template('index.html')
 
 # endpoint per il caricamento del file JSON con lo schema di partenza e ritornare la struttura del json al frontend
@@ -63,6 +69,7 @@ def uploadInputSchema():
             return jsonify({'error': f"Errore nella decodifica del file JSON: {e}"}), 400
         # se tutto va bene salvo la struttura del json della sessione e la restituisco al frontend
         session['inputSchemaStructure'] = jsonData
+        logging.info("Schema input uploaded")
         return jsonify({'jsonStructure': jsonData}), 200
     except Exception as e:
         # se ci sono errori restituisco un messaggio di errore
@@ -78,10 +85,13 @@ def uploadDestSchema():
         selectedSchema = requestJson.get('destSchema')
         # carico il json dello schema richiesto
         jsonStructure = loadSchema(selectedSchema)
+        # salvo lo schema nella sessione
+        session['destSchemaStructure'] = jsonStructure
         # se non trovo il nome dello schema restituisco un errore
         if jsonStructure is None:
             return jsonify({'error': 'Schema non trovato'}), 404
         # restituisco la struttura del json al frontend
+        logging.info(f"Schema {selectedSchema} uploaded")
         return jsonify({'jsonStructure': jsonStructure})
     except Exception as e:
         # Se c'è un errore restituiamo un messaggio di errore
@@ -115,6 +125,7 @@ def uploadDestSchemaFile():
             return jsonify({'error': f"Errore nella decodifica del file JSON: {e}"}), 400
         # se tutto va bene salvo la struttura del json della sessione e la restituisco al frontend
         session['destSchemaStructure'] = jsonData
+        logging.info("Schema dest uploaded")
         return jsonify({'jsonStructure': jsonData}), 200
     except Exception as e:
         # se ci sono errori restituisco un messaggio di errore
@@ -180,6 +191,7 @@ def generateMappingFunctionPOLIMI():
         functionLines.append("    return mappedData")
         # Unisci il codice in un'unica stringa
         mappingFunction = "\n".join(functionLines)
+        logging.info("Mapping function generated")
         # Restituisci la funzione di mapping al frontend
         return jsonify({'mappingFunction': mappingFunction}), 200
     except Exception as e:
@@ -293,6 +305,7 @@ def generateMappingFunctionFILE():
         functionLines.append("    return mappedData")
         # Unisco il codice in un'unica stringa
         mappingFunction = "\n".join(functionLines)
+        logging.info("Mapping function generated")
         # ritorno del mappedData
         return jsonify({'mappingFunction': mappingFunction}), 200
     except Exception as e:
@@ -420,6 +433,7 @@ def generateMappingFunctionSCP():
         functionLines.append("    return mappedData")
         # UniscO il codice in un'unica stringa
         mappingFunction = "\n".join(functionLines)
+        logging.info("Mapping function generated")
         # RestituiSCO la funzione di mapping al frontend
         return jsonify({'mappingFunction': mappingFunction}), 200
     except Exception as e:
@@ -431,12 +445,30 @@ def generateMappingFunctionSCP():
 @app.route('/saveMappingFunction', methods=['POST'])
 def saveMappingFunction():
     try:
-        # Ottieni i dati inviati dal frontend
+        # Ottiengo i dati inviati dal frontend
         mappingData = request.get_json()
-        # TODO: inviare la funzione di mapping al nuovo microservizio (ancora da creare) mapping_manager
-               # in modo che possa controllare se il nome è già stato usato e salvare nel suo db le info dest_schema, input_schema, nome e funzione di mapping
-               # o ritornare un errore se il nome è già stato usato.
-        return jsonify({'data': mappingData}), 200
+        mappingFunction = mappingData['mappingFunction']
+        mappingName = mappingData['mappingName']
+        schemaDest = session.get('destSchemaStructure')
+        schemaInput = session.get('inputSchemaStructure')
+        # Verifica che siano forniti tutti i dati necessari
+        if not mappingName or not mappingFunction:
+            return jsonify({'error': "Nome o funzione di mapping mancanti"}), 400
+        # creo il pacchetto da inviare a data_transformer
+        payload = {
+            'mappingFunction': mappingFunction,
+            'mappingName': mappingName,
+            'schemaDest': schemaDest,
+            'schemaInput': schemaInput
+        }
+        logging.info("Sending request to URL: " + DATA_TRANSFORMER_URL)
+        response = requests.post(DATA_TRANSFORMER_URL, json=payload)
+        logging.info("request sent")
+        # Se la richiesta è andata a buon fine restituisco il messaggio di successo
+        if response.status_code == 201:
+            return jsonify({'response': response.json()}), 200
+        else:
+            return jsonify({'error': f"Errore dal servizio data_transformer: {response.text}"}), response.status_code
     except Exception as e:
         # Se c'è un errore restituisco un messaggio di errore
         return jsonify({'error': f"Errore durante il salvataggio della funzione di mapping"}), 500

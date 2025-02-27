@@ -96,5 +96,6 @@ def register_dg():
         return make_response(repr(e), 500)
 @app.route("/data_transformer_ui", methods=["GET"])
 def data_transformer_ui():
-    host = request.host.split(':')[0]  
+    host = request.host.split(':')[0] 
+    logging.info(f"Redirecting to data transformer web page") 
     return redirect(f"http://{host}:80")

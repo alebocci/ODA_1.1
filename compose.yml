@@ -43,6 +43,17 @@ services:
       - influxdbconfig:/etc/influxdb2:rw
     restart: always
 
+  mysql:
+    image: mysql:5.7
+    container_name: mysqldb
+    restart: always
+    env_file:
+      - mysql.env
+    ports:
+      - ${mysql_port}:3306
+    volumes:
+      - mysqldata:/var/lib/mysql
+    
   dbmanager:
     build: 
       context: src/db_manager
@@ -111,11 +122,27 @@ services:
     ports:
       - 80:${web_data_transformer_port}
     environment:
-      DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
+      WEB_DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
+      DATA_TRANSFORMER_PORT: ${data_transformer_port}
     depends_on:
       - apigateway
 
+  data_transformer:
+    build: 
+      context: src/data_transformer
+      args:
+        DATA_TRANSFORMER_PORT: ${data_transformer_port}
+    container_name: datatransformer
+    restart: always
+    ports:
+      - ${data_transformer_port}:${data_transformer_port}
+    environment:
+      DATA_TRANSFORMER_PORT: ${data_transformer_port}
+    depends_on:
+      - apigateway
+      - mysql
 
 volumes:
   influxdbdata:
   influxdbconfig:
+  mysqldata:

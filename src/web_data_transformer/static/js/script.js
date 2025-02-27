@@ -1115,7 +1115,7 @@ function saveMapping() {
             if (data.error) {
                 alert(`Errore: ${data.error}`);
             } else {
-                showModal('info', JSON.stringify(data));
+                alert(JSON.stringify(data.response.message));
             }
         })
         .catch(error => {
