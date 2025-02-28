@@ -15,6 +15,70 @@ MYSQL_USER = 'user'
 MYSQL_PASSWORD = 'password'  
 MYSQL_DATABASE = 'mysqldb'  
 
+
+# funzione per controllo sql-injection
+def checkSQLInjection(data):
+    if not isinstance(data, str):
+        data = str(data)
+    # Lista di pattern comuni utilizzati negli attacchi SQL Injection
+    sqlPatterns = [
+        "'--", 
+        "' OR '1'='1", 
+        "' OR '1'='1'--", 
+        '" OR "1"="1', 
+        '" OR "1"="1"--',
+        "SELECT",
+        "DELETE",
+        "UPDATE",
+        "INSERT",
+        "ALTER",
+        "CREATE",
+        "DROP",
+        "TRUNCATE",
+        "EXECUTE",
+        "EXEC",
+        "UNION SELECT", 
+        "DROP TABLE", 
+        "INSERT INTO", 
+        "DELETE FROM", 
+        "UPDATE SET",
+        ";--", 
+        "1=1--", 
+        "OR 1=1",
+        "EXEC(",
+        "CHAR(",
+        "CAST(",
+        "DECLARE",
+        "SELECT * FROM",
+        "' OR 'a'='a",
+        '" OR "a"="a',
+        "' OR 1=1#",
+        '" OR 1=1#',
+        "' OR 'x'='x",
+        '" OR "x"="x',
+        "' OR ''='",
+        "OR ' ' = ' ",
+        "' OR 1=1--",
+        "'; EXEC xp_cmdshell('dir');--",
+        "' OR '1'='1'/*",
+        "OR 1=1 LIMIT 1",
+        "SLEEP(5)#",
+        "'; WAITFOR DELAY '00:00:05'--",
+        "HAVING 1=1",
+        "ORDER BY 1--",
+        "' OR EXISTS(SELECT * FROM users)--",
+        "' UNION SELECT NULL,NULL--",
+        "'; DROP DATABASE test;--"
+    ]
+    # porto tutto in minuscolo
+    dataLower = data.lower()
+    # Controlla la presenza di ogni pattern
+    for pattern in sqlPatterns:
+        if pattern.lower() in dataLower:
+            return True
+    return False
+
+
 # funzione per la creazione di una connessione al database MySQL
 def getDBConnection():
     try:
@@ -69,7 +133,7 @@ def initDB():
 
 
 # Endpoint per il salvataggio di una funzione di mapping
-@app.route('/', methods=['POST'])
+@app.route('/saveMappingFunction', methods=['POST'])
 def saveMappingFunction():
     try:
         initDB()
@@ -84,6 +148,10 @@ def saveMappingFunction():
         # Verifico che tutti i campi necessari siano presenti
         if not mappingName or not mappingFunction:
             return jsonify({'error': 'Nome mapping o funzione mancanti'}), 400
+        # Controllo SQL Injection
+        if checkSQLInjection(mappingName):
+            logging.warning(f"Potential SQL injection detected in mapping name: {mappingName}")
+            return jsonify({'error': 'Potenziale tentativo di sql-injection'}), 400
         conn = getDBConnection()
         if not conn:
             return jsonify({'error': 'Impossibile connettersi al database'}), 500
@@ -94,7 +162,7 @@ def saveMappingFunction():
         if cursor.fetchone()[0] > 0:
             cursor.close()
             conn.close()
-            return jsonify({'error': f'Esiste già un mapping con il nome: {mappingName}'}), 409
+            return jsonify({'error': f'Esiste gia un mapping con il nome: {mappingName}'}), 409
         # se non esiste già un mapping con quel mome lo inserisco nel db
         insertQuery = """
         INSERT INTO mapping_functions (mapping_name, mapping_function, schema_dest, schema_input)
@@ -114,5 +182,3 @@ def saveMappingFunction():
         logging.error(f"Error saving mapping: {str(e)}")
         return jsonify({'error': f"Errore durante il salvataggio: {str(e)}"}), 500
     
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get('DATA_TRANSFORMER_PORT')))

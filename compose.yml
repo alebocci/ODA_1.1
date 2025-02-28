@@ -49,8 +49,6 @@ services:
     restart: always
     env_file:
       - mysql.env
-    ports:
-      - ${mysql_port}:3306
     volumes:
       - mysqldata:/var/lib/mysql
     
@@ -134,8 +132,6 @@ services:
         DATA_TRANSFORMER_PORT: ${data_transformer_port}
     container_name: datatransformer
     restart: always
-    ports:
-      - ${data_transformer_port}:${data_transformer_port}
     environment:
       DATA_TRANSFORMER_PORT: ${data_transformer_port}
     depends_on:

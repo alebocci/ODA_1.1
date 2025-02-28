@@ -1089,9 +1089,16 @@ function saveMapping() {
     document.getElementById('nameMappingFunction').onclick = function () {
         // Recupero il nome del mapping inserito dall'utente
         const mappingName = document.getElementById('mappingName').value.trim();
+        const errorContainer = document.getElementById('errorContainer');
+        const successContainer = document.getElementById('successContainer');
+        errorContainer.textContent = ''; 
+        errorContainer.style.display = 'none';
+        successContainer.textContent = ''; 
+        successContainer.style.display = 'none';
         // Verifico che il nome del mapping sia stato inserito
         if (!mappingName) {
-            alert('Inserisci un nome per il mapping.');
+            errorContainer.textContent = 'Inserisci un nome per il mapping.';
+            errorContainer.style.display = 'block';
             return;
         }
         // Recupero la funzione di mapping generata
@@ -1101,7 +1108,6 @@ function saveMapping() {
             mappingName: mappingName,
             mappingFunction: mappingFunction
         };
-        modal.hide();
         // Invio i dati al backend 
         fetch('/saveMappingFunction', {
             method: 'POST',
@@ -1113,14 +1119,30 @@ function saveMapping() {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                alert(`Errore: ${data.error}`);
+                errorContainer.textContent = data.error;
+                errorContainer.style.display = 'block';
             } else {
-                alert(JSON.stringify(data.response.message));
+                successContainer.textContent = data.response.message;
+                successContainer.style.display = 'block';
+                setTimeout(() => {
+                    modal.hide();
+                }, 3000);
             }
         })
         .catch(error => {
             console.error('Errore:', error);
-            alert('Si è verificato un errore durante il salvataggio del mapping.');
+            errorContainer.textContent = data.error;
+            errorContainer.style.display = 'block';
         });
     };
 }
+
+
+// funzione per azzerare il contenuto del modal
+document.getElementById('saveMappingModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('mappingName').value = ''; 
+    document.getElementById('errorContainer').textContent = ''; 
+    document.getElementById('errorContainer').style.display = 'none';
+    document.getElementById('successContainer').textContent = ''; 
+    document.getElementById('successContainer').style.display = 'none';
+});

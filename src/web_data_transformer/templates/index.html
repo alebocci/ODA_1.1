@@ -47,6 +47,10 @@
             <h5 class="modal-title" id="saveMappingModalLabel">Inserisci il nome da dare alla funzione</h5>
           </div>
           <div class="modal-body">
+            <!-- Contenitore per gli errori -->
+            <div id="errorContainer" class="alert alert-danger" style="display: none;"></div>
+            <!-- Contenitore per il successo -->
+            <div id="successContainer" class="alert alert-success" style="display: none;"></div>
             <div class="mb-3">
               <label for="mappingName" class="form-label">Nome del mapping:</label>
               <input type="text" class="form-control" id="mappingName" name="mappingName" required>

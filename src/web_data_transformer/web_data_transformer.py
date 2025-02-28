@@ -37,7 +37,7 @@ def loadSchema(schemaName):
 # endpoint per la pagina principale
 @app.route('/')
 def index():
-    logging.info("Serving web page")
+    app.logger.info("Serving web page")
     return render_template('index.html')
 
 # endpoint per il caricamento del file JSON con lo schema di partenza e ritornare la struttura del json al frontend
@@ -69,7 +69,7 @@ def uploadInputSchema():
             return jsonify({'error': f"Errore nella decodifica del file JSON: {e}"}), 400
         # se tutto va bene salvo la struttura del json della sessione e la restituisco al frontend
         session['inputSchemaStructure'] = jsonData
-        logging.info("Schema input uploaded")
+        app.logger.info("Schema input uploaded")
         return jsonify({'jsonStructure': jsonData}), 200
     except Exception as e:
         # se ci sono errori restituisco un messaggio di errore
@@ -91,7 +91,7 @@ def uploadDestSchema():
         if jsonStructure is None:
             return jsonify({'error': 'Schema non trovato'}), 404
         # restituisco la struttura del json al frontend
-        logging.info(f"Schema {selectedSchema} uploaded")
+        app.logger.info(f"Schema {selectedSchema} uploaded")
         return jsonify({'jsonStructure': jsonStructure})
     except Exception as e:
         # Se c'è un errore restituiamo un messaggio di errore
@@ -125,7 +125,7 @@ def uploadDestSchemaFile():
             return jsonify({'error': f"Errore nella decodifica del file JSON: {e}"}), 400
         # se tutto va bene salvo la struttura del json della sessione e la restituisco al frontend
         session['destSchemaStructure'] = jsonData
-        logging.info("Schema dest uploaded")
+        app.logger.info("Schema dest uploaded")
         return jsonify({'jsonStructure': jsonData}), 200
     except Exception as e:
         # se ci sono errori restituisco un messaggio di errore
@@ -191,7 +191,7 @@ def generateMappingFunctionPOLIMI():
         functionLines.append("    return mappedData")
         # Unisci il codice in un'unica stringa
         mappingFunction = "\n".join(functionLines)
-        logging.info("Mapping function generated")
+        app.logger.info("Mapping function generated")
         # Restituisci la funzione di mapping al frontend
         return jsonify({'mappingFunction': mappingFunction}), 200
     except Exception as e:
@@ -305,7 +305,7 @@ def generateMappingFunctionFILE():
         functionLines.append("    return mappedData")
         # Unisco il codice in un'unica stringa
         mappingFunction = "\n".join(functionLines)
-        logging.info("Mapping function generated")
+        app.logger.info("Mapping function generated")
         # ritorno del mappedData
         return jsonify({'mappingFunction': mappingFunction}), 200
     except Exception as e:
@@ -433,7 +433,7 @@ def generateMappingFunctionSCP():
         functionLines.append("    return mappedData")
         # UniscO il codice in un'unica stringa
         mappingFunction = "\n".join(functionLines)
-        logging.info("Mapping function generated")
+        app.logger.info("Mapping function generated")
         # RestituiSCO la funzione di mapping al frontend
         return jsonify({'mappingFunction': mappingFunction}), 200
     except Exception as e:
@@ -461,14 +461,15 @@ def saveMappingFunction():
             'schemaDest': schemaDest,
             'schemaInput': schemaInput
         }
-        logging.info("Sending request to URL: " + DATA_TRANSFORMER_URL)
-        response = requests.post(DATA_TRANSFORMER_URL, json=payload)
-        logging.info("request sent")
+        URL = DATA_TRANSFORMER_URL + '/saveMappingFunction'
+        app.logger.info("Sending request to URL: " + URL)
+        response = requests.post(URL, json=payload)
+        app.logger.info("request sent")
         # Se la richiesta è andata a buon fine restituisco il messaggio di successo
         if response.status_code == 201:
             return jsonify({'response': response.json()}), 200
         else:
-            return jsonify({'error': f"Errore dal servizio data_transformer: {response.text}"}), response.status_code
+            return jsonify({'error': f"{response.json().get('error')}"}), response.status_code
     except Exception as e:
         # Se c'è un errore restituisco un messaggio di errore
         return jsonify({'error': f"Errore durante il salvataggio della funzione di mapping"}), 500
