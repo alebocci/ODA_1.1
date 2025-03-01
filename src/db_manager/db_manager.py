@@ -84,12 +84,17 @@ def query():
             return make_response("", 404)
         result = extractResults(result)
 
-        content = gzip.compress(json.dumps(result).encode('utf8'),mtime=0)
-        response = make_response(content)
-        response.headers['Content-length'] = len(content)
-        response.headers['Content-Encoding'] = 'gzip'
-        return response
-        #return make_response(jsonify(result), 200)
+        zipParameter = request.args.get('zip', 'false').lower()
+        if zipParameter == 'true':
+            app.logger.info('Not compressing response')
+            return make_response(jsonify(result), 200)
+        else:
+            app.logger.info('Compressing response')
+            content = gzip.compress(json.dumps(result).encode('utf8'),mtime=0)
+            response = make_response(content)
+            response.headers['Content-length'] = len(content)
+            response.headers['Content-Encoding'] = 'gzip'
+            return response
     except Exception as e:
         app.logger.error(repr(e))
         return make_response(repr(e), 400)

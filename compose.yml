@@ -106,6 +106,7 @@ services:
       DB_MANAGER_PORT: ${db_manager_port}
       TOPIC_MANAGER_PORT: ${topic_manager_port}
       WEB_DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
+      DATA_TRANSFORMER_PORT: ${data_transformer_port}
     depends_on:
       - datapump
       - topicmanager

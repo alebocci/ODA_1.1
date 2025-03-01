@@ -139,7 +139,7 @@ def saveMappingFunction():
         initDB()
         # payload della richiesta
         data = request.json
-        logging.info(f"Received a save request for mapping: {data['mappingName']}")
+        app.logger.info(f"Received a save request for mapping: {data['mappingName']}")
         # Estraggo i dati dal payload
         mappingName = data.get('mappingName')
         mappingFunction = data.get('mappingFunction')
@@ -150,7 +150,7 @@ def saveMappingFunction():
             return jsonify({'error': 'Nome mapping o funzione mancanti'}), 400
         # Controllo SQL Injection
         if checkSQLInjection(mappingName):
-            logging.warning(f"Potential SQL injection detected in mapping name: {mappingName}")
+            app.logger.warning(f"Potential SQL injection detected in mapping name: {mappingName}")
             return jsonify({'error': 'Potenziale tentativo di sql-injection'}), 400
         conn = getDBConnection()
         if not conn:
@@ -172,13 +172,34 @@ def saveMappingFunction():
         conn.commit()
         cursor.close()
         conn.close()
-        logging.info(f"Mapping '{mappingName}' successfully saved")
+        app.logger.info(f"Mapping '{mappingName}' successfully saved")
         # ritrno un messaggio di successo
         return jsonify({
             'success': True,
             'message': f"Mapping '{mappingName}' salvato con successo"
         }), 201
     except Exception as e:
-        logging.error(f"Error saving mapping: {str(e)}")
+        app.logger.error(f"Error saving mapping: {str(e)}")
         return jsonify({'error': f"Errore durante il salvataggio: {str(e)}"}), 500
     
+
+# endpoint per la lista dei nomi dei mapping salvati 
+@app.route('/mappingList', methods=['POST'])
+def mappingList():
+    try:
+        conn = getDBConnection()
+        if not conn:
+            app.logger.error("Impossibile connettersi al database")
+            return make_response('Impossibile connettersi al database', 500)
+        cursor = conn.cursor()
+        # Estraggo tutti i mapping dal db
+        selectQuery = "SELECT mapping_name FROM mapping_functions"
+        cursor.execute(selectQuery)
+        mappingList = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+        app.logger.info(f"Returning mapping list: {mappingList}")
+        return make_response(mappingList, 200)
+    except Exception as e:
+        app.logger.error(f"Error getting mapping list: {str(e)}")
+        return make_response(f"Errore durante il recupero della lista: {str(e)}", 500)

@@ -13,6 +13,9 @@ KAFKA_URL = KAFKA_ADDRESS+":"+KAFKA_PORT
 TOPIC_MANAGER_PORT= os.environ["TOPIC_MANAGER_PORT"]
 TOPIC_MANAGER_URL = "http://topicmanager:"+TOPIC_MANAGER_PORT
 
+DATA_TRANSFORMER_PORT = os.environ["DATA_TRANSFORMER_PORT"]
+DATA_TRANSFORMER_URL = "http://datatransformer:"+DATA_TRANSFORMER_PORT
+
 
 app = Flask(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -40,10 +43,12 @@ def query():
         msg = request.get_json()
         if not msg:
             return make_response("Empty query", 404)
+        zipParameter = request.args.get('zip', 'false').lower()
         URL= DB_MANAGER_URL + '/query'
+        params = {'zip': zipParameter}
         app.logger.info(f"Sending query to {URL}")
         app.logger.info(f"Query: {msg}")
-        x = requests.post(URL, json=msg, stream=True)
+        x = requests.post(URL, json=msg, params=params, stream=True)
         x.raise_for_status()
         logging.info("Query sent to DB service")
         resp = make_response(x.raw.read(), x.status_code, x.headers.items())
@@ -56,7 +61,8 @@ def query():
     except Exception as e:
         app.logger.error(repr(e))
         return make_response(repr(e), 500)
-    
+
+
 @app.route("/register/dc", methods=["GET"]) 
 def register_dc():
     try:
@@ -75,6 +81,8 @@ def register_dc():
     except Exception as e:
         app.logger.error(repr(e))
         return make_response(repr(e), 500)
+
+
 @app.route("/register/dg", methods=["POST"]) 
 def register_dg():
     try:
@@ -95,7 +103,27 @@ def register_dg():
         app.logger.error(repr(e))
         return make_response(repr(e), 500)
 @app.route("/data_transformer_ui", methods=["GET"])
+
+
 def data_transformer_ui():
     host = request.host.split(':')[0] 
     logging.info(f"Redirecting to data transformer web page") 
     return redirect(f"http://{host}:80")
+
+
+@app.route("/mappingList", methods=["POST"])
+def mappingList():
+    try:
+        URL= DATA_TRANSFORMER_URL + '/mappingList'
+        app.logger.info(f"Asking for mapping list to {URL}")
+        x = requests.post(URL)
+        x.raise_for_status()
+        app.logger.info(f"Mapping list received: {x.content.decode('utf-8')}")
+        return make_response(x.content.decode('utf-8'), 200)
+    except HTTPError as e:
+        app.logger.error(f'HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}')
+        return make_response(e.response.text, e.response.status_code)
+    except Exception as e:
+        app.logger.error(repr(e))
+        return make_response(repr(e), 500)
+    
