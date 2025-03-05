@@ -43,17 +43,25 @@ def query():
         msg = request.get_json()
         if not msg:
             return make_response("Empty query", 404)
-        zipParameter = request.args.get('zip', 'false').lower()
-        URL= DB_MANAGER_URL + '/query'
-        params = {'zip': zipParameter}
-        app.logger.info(f"Sending query to {URL}")
-        app.logger.info(f"Query: {msg}")
-        x = requests.post(URL, json=msg, params=params, stream=True)
-        x.raise_for_status()
-        logging.info("Query sent to DB service")
-        resp = make_response(x.raw.read(), x.status_code, x.headers.items())
-        return resp
-        
+        transformParameter = request.args.get('transform', 'false').lower()
+        if transformParameter == 'true':
+            URL= DATA_TRANSFORMER_URL + '/queryTransformed'
+            app.logger.info(f"Sending query to {URL}")
+            app.logger.info(f"Query: {msg}")
+            x = requests.post(URL, json=msg, stream=True)
+            x.raise_for_status()
+            logging.info("Query sent to Data Transformer service")
+            trnaformedData = x.json()
+            return make_response(jsonify(trnaformedData), 200)
+        else:
+            URL= DB_MANAGER_URL + '/query'
+            app.logger.info(f"Sending query to {URL}")
+            app.logger.info(f"Query: {msg}")
+            x = requests.post(URL, json=msg, stream=True)
+            x.raise_for_status()
+            logging.info("Query sent to DB service")
+            resp = make_response(x.raw.read(), x.status_code, x.headers.items())
+            return resp
         #return make_response(x.json(), 200)
     except HTTPError as e:
         app.logger.error(f'HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}')
@@ -120,6 +128,49 @@ def mappingList():
         x.raise_for_status()
         app.logger.info(f"Mapping list received: {x.content.decode('utf-8')}")
         return make_response(x.content.decode('utf-8'), 200)
+    except HTTPError as e:
+        app.logger.error(f'HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}')
+        return make_response(e.response.text, e.response.status_code)
+    except Exception as e:
+        app.logger.error(repr(e))
+        return make_response(repr(e), 500)
+    
+
+@app.route("/mappingDetails/<string:name>", methods=["POST"])
+def mapingDetails(name):
+    try:
+        URL= DATA_TRANSFORMER_URL + '/mappingDetails'
+        app.logger.info(f"Asking for mapping details to {URL}")
+        x = requests.post(URL, json={"mappingName":name})
+        x.raise_for_status()
+        response = json.loads(x.content.decode('utf-8'))
+        app.logger.info(f"Mapping details received: {json.dumps(response, indent=4)}")
+        return make_response(jsonify(response), 200)
+    except HTTPError as e:
+        app.logger.error(f'HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}')
+        return make_response(e.response.text, e.response.status_code)
+    except Exception as e:
+        app.logger.error(repr(e))
+        return make_response(repr(e), 500)
+    
+
+@app.route("/linkMapping/<string:name>", methods=["POST"])
+def linkMapping(name):
+    try:
+        msg = request.get_json()
+        if not msg:
+            return make_response("The request's body is empty", 400)
+        topic = msg.get("topic")
+        generator_id = msg.get("generator_id")
+        if not topic or not generator_id:
+            return make_response("Missing topic or generator_id", 400)
+        payload = {"mappingName":name, "topic":topic, "generator_id":generator_id}
+        URL = DATA_TRANSFORMER_URL + '/linkMapping'
+        app.logger.info(f"Linking mapping {name} to {generator_id} and {topic}")
+        x = requests.post(URL, json=payload)
+        x.raise_for_status()
+        app.logger.info(f"Mapping linked")
+        return make_response("Mapping linked", 200)
     except HTTPError as e:
         app.logger.error(f'HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}')
         return make_response(e.response.text, e.response.status_code)

@@ -1,4 +1,5 @@
 import logging
+import requests
 import sys
 import json
 import os
@@ -14,7 +15,8 @@ MYSQL_HOST = 'mysql'
 MYSQL_USER = 'user'  
 MYSQL_PASSWORD = 'password'  
 MYSQL_DATABASE = 'mysqldb'  
-
+DB_MANAGER_PORT= os.environ["DB_MANAGER_PORT"]
+DB_MANAGER_URL = "http://dbmanager:"+DB_MANAGER_PORT
 
 # funzione per controllo sql-injection
 def checkSQLInjection(data):
@@ -111,7 +113,7 @@ def initDB():
         # Mi connetto al database creato
         cursor.execute(f"USE {MYSQL_DATABASE}")
         # Creo la tabella per i mapping se non esiste
-        createTable = """
+        createMappingTable = """
         CREATE TABLE IF NOT EXISTS mapping_functions (
             id INT AUTO_INCREMENT PRIMARY KEY,
             mapping_name VARCHAR(255) UNIQUE NOT NULL,
@@ -121,8 +123,21 @@ def initDB():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """
-        cursor.execute(createTable)
+        cursor.execute(createMappingTable)
         logging.info("mapping_function table successfully created")
+        # creo la tabella per il legame tra mapping e DG
+        createLinkTable = """
+        CREATE TABLE IF NOT EXISTS mapping_dg_links (
+            mapping_id INT NOT NULL,
+            generator_id VARCHAR(255) NOT NULL,
+            topic VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (mapping_id, generator_id, topic),
+            FOREIGN KEY (mapping_id) REFERENCES mapping_functions(id)
+        )
+        """
+        cursor.execute(createLinkTable)
+        logging.info("mapping_dg_links table successfully created")
         conn.commit()
     except Error as e:
         logging.error(f"Error during initialization of db: {e}")
@@ -130,6 +145,34 @@ def initDB():
         if conn and conn.is_connected():
             cursor.close()
             conn.close()
+
+
+# Funzione per ottenere la funzione di mapping associata a un generator_id e topic
+def getMappingFunction(generator_id, topic):
+    try:
+        conn = getDBConnection()
+        if not conn:
+            app.logger.error("Impossibile connettersi al database")
+            return None
+        
+        cursor = conn.cursor()
+        query = """
+        SELECT mf.mapping_function 
+        FROM mapping_functions mf
+        JOIN mapping_dg_links mdl ON mf.id = mdl.mapping_id
+        WHERE mdl.generator_id = %s AND mdl.topic = %s
+        """
+        cursor.execute(query, (generator_id, topic))
+        result = cursor.fetchall()
+        app.logger.info(f"Mapping function found: {result[0]}")
+        cursor.close()
+        conn.close()
+        if result:
+            return result[0]
+        return None
+    except Exception as e:
+        app.logger.error(f"Error getting mapping function: {str(e)}")
+        return None
 
 
 # Endpoint per il salvataggio di una funzione di mapping
@@ -203,3 +246,158 @@ def mappingList():
     except Exception as e:
         app.logger.error(f"Error getting mapping list: {str(e)}")
         return make_response(f"Errore durante il recupero della lista: {str(e)}", 500)
+    
+
+# endpoint per i dettagli di un mapping
+@app.route('/mappingDetails', methods=['POST'])
+def mappingDetails():
+    try:
+        data = request.json
+        mappingName = data.get('mappingName')
+        # Controllo SQL Injection
+        if checkSQLInjection(mappingName):
+            app.logger.warning(f"Potential SQL injection detected in mapping name: {mappingName}")
+            return make_response('Potenziale tentativo di sql-injection', 400)
+        if not mappingName:
+            return make_response('Nome mapping mancante', 400)
+        conn = getDBConnection()
+        if not conn:
+            app.logger.error("Impossibile connettersi al database")
+            return make_response('Impossibile connettersi al database', 500)
+        cursor = conn.cursor()
+        # Estraggo i dettagli del mapping dal db
+        selectQuery = "SELECT mapping_function, schema_dest, schema_input FROM mapping_functions WHERE mapping_name = %s"
+        cursor.execute(selectQuery, (mappingName,))
+        mappingDetails = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if not mappingDetails:
+            return make_response(f"Mapping '{mappingName}' non trovato", 404)
+        response = {
+            "mapping_function": mappingDetails[0],
+            "schema_dest": mappingDetails[1],
+            "schema_input": mappingDetails[2]
+        }
+        app.logger.info(f"Returning mapping details: {response}")
+        return make_response(jsonify(response), 200)
+    except Exception as e:
+        app.logger.error(f"Error getting mapping details: {str(e)}")
+        return make_response(f"Errore durante il recupero dei dettagli: {str(e)}", 500)
+    
+
+# endpoint per il collegamento di un mapping a un DG
+@app.route('/linkMapping', methods=['POST'])
+def linkMapping():
+    try:
+        # inizializzo il DB se necessario
+        initDB()
+        # estraggo il payload dalla richiesta
+        data = request.json
+        if not data:
+            return make_response('Empty request', 400)
+        mappingName = data.get('mappingName')
+        topic = data.get('topic')
+        generatorId = data.get('generator_id')
+        if checkSQLInjection(mappingName) or checkSQLInjection(topic) or checkSQLInjection(generatorId):
+            app.logger.warning("Potential SQL injection detected")
+            return make_response('Potenziale tentativo di sql-injection', 400)
+        if not mappingName or not topic or not generatorId:
+            return make_response('Missing mappingName, topic or generator_id', 400)
+        conn = getDBConnection()
+        if not conn:
+            app.logger.error("Impossibile connettersi al database")
+            return make_response('Impossibile connettersi al database', 500)
+        cursor = conn.cursor()
+        # Estraggo l'id del mapping
+        selectQuery = "SELECT id FROM mapping_functions WHERE mapping_name = %s"
+        cursor.execute(selectQuery, (mappingName,))
+        mappingId = cursor.fetchone()
+        if not mappingId:
+            cursor.close()
+            conn.close()
+            return make_response(f"Mapping '{mappingName}' non trovato", 404)
+        # Controlla se esiste già una tripla (mapping_id, topic, generator_id) nella tabella mapping_dg_links
+        checkQuery = """
+        SELECT COUNT(*) FROM mapping_dg_links 
+        WHERE mapping_id = %s AND topic = %s AND generator_id = %s
+        """
+        cursor.execute(checkQuery, (mappingId[0], topic, generatorId))
+        if cursor.fetchone()[0] > 0:
+            cursor.close()
+            conn.close()
+            return make_response(f"Il DG {generatorId} è già collegato al mapping con nome: {mappingName}"), 409
+        # Inserisco il legame tra mapping e DG nella tabella mapping_dg_links
+        insertQuery = """
+        INSERT INTO mapping_dg_links (mapping_id, generator_id, topic)
+        VALUES (%s, %s, %s)
+        """
+        cursor.execute(insertQuery, (mappingId[0], generatorId, topic))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        app.logger.info(f"Mapping '{mappingName}' linked to {generatorId} and {topic}")
+        return make_response("Mapping linked", 200)
+    except Exception as e:
+        app.logger.error(f"Error linking mapping: {str(e)}")
+        return make_response(f"Errore durante il collegamento: {str(e)}", 500)
+
+
+# funzione per eseguire la funzione di mapping su un record della query
+def applyMapping(record, mappingFunction):
+    try:
+        if not record:
+            app.logger.error("Record is empty")
+            raise ValueError("Record is empty")
+        
+        if not mappingFunction or not callable(mappingFunction):
+            app.logger.error("Mapping function is invalid or not provided")
+            raise ValueError("Mapping function is invalid or not provided")
+        
+        try:
+            # Eseguo la funzione di mapping
+            transformedData = mappingFunction(record)
+            app.logger.info("Data transformed successfully")
+            return transformedData
+        except Exception as e:
+            app.logger.error(f"Error executing mapping function: {str(e)}")
+            raise
+    except Exception as e:
+        app.logger.error(f"Error applying mapping: {str(e)}")
+        raise
+    
+
+# ednpoint per le query dei dati trasformati
+@app.route("/queryTransformed", methods=["POST"])
+def queryTransformed():
+    try:
+        msg = request.get_json()
+        if not msg:
+            return make_response("The request's body is empty", 400)
+        URL = DB_MANAGER_URL + '/query'
+        app.logger.info(f"Sending query to {URL}")
+        x = requests.post(URL, json=msg, params={'zip': 'true'})
+        x.raise_for_status()
+        data = x.json()
+        app.logger.info(f"Query response received: {json.dumps(data, indent=4)}")
+        transformData = []
+        for record in data:
+            generatorId = record.get('generator_id')
+            topic = record.get('topic')
+            mappingFunction = getMappingFunction(generatorId, topic)
+            app.logger.info(f"mappingFunction: {mappingFunction}")
+            if mappingFunction:
+                transformedRecord = applyMapping(record, mappingFunction)
+                if transformedRecord is not None:
+                    transformData.append(transformedRecord)
+            else:
+                app.logger.error(f"No valid mapping function found for generatorId: {generatorId}, topic: {topic}")
+        return make_response(jsonify(transformData), 200)
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"HTTP request error: {str(e)}")
+        return make_response(f"HTTP request error: {str(e)}", 500)
+    except ValueError as e:
+        app.logger.error(f"Value error: {str(e)}")
+        return make_response(f"Value error: {str(e)}", 400)
+    except Exception as e:
+        app.logger.error(f"Unexpected error: {str(e)}")
+        return make_response(f"Unexpected error: {str(e)}", 500)

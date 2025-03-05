@@ -64,7 +64,6 @@ def mappingFunction(inputData):
     mappedData['generator_id'] = inputData.get('generatorId')
     mappedData['timestamp'] = inputData.get('timestamp')
     mappedData['topic'] = inputData.get('topic')
-    print(json.dumps(mappedData, indent=4))
     return mappedData
 
 
