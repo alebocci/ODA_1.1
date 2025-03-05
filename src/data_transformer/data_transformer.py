@@ -157,18 +157,22 @@ def getMappingFunction(generator_id, topic):
         
         cursor = conn.cursor()
         query = """
-        SELECT mf.mapping_function 
+        SELECT mf.mapping_function, mf.created_at
         FROM mapping_functions mf
         JOIN mapping_dg_links mdl ON mf.id = mdl.mapping_id
         WHERE mdl.generator_id = %s AND mdl.topic = %s
+        ORDER BY mf.created_at DESC
+        LIMIT 1
         """
         cursor.execute(query, (generator_id, topic))
-        result = cursor.fetchall()
-        app.logger.info(f"Mapping function found: {result[0]}")
+        result = cursor.fetchone()
         cursor.close()
         conn.close()
         if result:
-            return result[0]
+            mappingFunction, created_at = result
+            app.logger.info(f"Mapping function found for generator_id: {generator_id}, topic: {topic}, created at: {created_at}")
+            return mappingFunction
+        app.logger.warning(f"No mapping function found for generator_id: {generator_id}, topic: {topic}")
         return None
     except Exception as e:
         app.logger.error(f"Error getting mapping function: {str(e)}")
@@ -340,30 +344,6 @@ def linkMapping():
     except Exception as e:
         app.logger.error(f"Error linking mapping: {str(e)}")
         return make_response(f"Errore durante il collegamento: {str(e)}", 500)
-
-
-# funzione per eseguire la funzione di mapping su un record della query
-def applyMapping(record, mappingFunction):
-    try:
-        if not record:
-            app.logger.error("Record is empty")
-            raise ValueError("Record is empty")
-        
-        if not mappingFunction or not callable(mappingFunction):
-            app.logger.error("Mapping function is invalid or not provided")
-            raise ValueError("Mapping function is invalid or not provided")
-        
-        try:
-            # Eseguo la funzione di mapping
-            transformedData = mappingFunction(record)
-            app.logger.info("Data transformed successfully")
-            return transformedData
-        except Exception as e:
-            app.logger.error(f"Error executing mapping function: {str(e)}")
-            raise
-    except Exception as e:
-        app.logger.error(f"Error applying mapping: {str(e)}")
-        raise
     
 
 # ednpoint per le query dei dati trasformati
@@ -378,15 +358,21 @@ def queryTransformed():
         x = requests.post(URL, json=msg, params={'zip': 'true'})
         x.raise_for_status()
         data = x.json()
-        app.logger.info(f"Query response received: {json.dumps(data, indent=4)}")
         transformData = []
         for record in data:
+            app.logger.info(f"Applying mapping to record: {json.dumps(record, indent=4)}")
+            app.logger.info(f"type of record['data']: {type(record['data'])}")
             generatorId = record.get('generator_id')
             topic = record.get('topic')
-            mappingFunction = getMappingFunction(generatorId, topic)
-            app.logger.info(f"mappingFunction: {mappingFunction}")
-            if mappingFunction:
-                transformedRecord = applyMapping(record, mappingFunction)
+            mappingFunctionCode = getMappingFunction(generatorId, topic)
+            app.logger.info(f"mappingFunction: {mappingFunctionCode}")
+            if mappingFunctionCode:
+                namespace = {}
+                exec(mappingFunctionCode, namespace)
+                if isinstance(record['data'], str):
+                    record['data'] = json.loads(record['data'])
+                    app.logger.info(f"type of record['data']: {type(record['data'])}")
+                transformedRecord = namespace['mappingFunction'](record)
                 if transformedRecord is not None:
                     transformData.append(transformedRecord)
             else:

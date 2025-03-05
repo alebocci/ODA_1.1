@@ -142,8 +142,11 @@ def generateMappingFunctionPOLIMI():
             mappingData['timestamp'] = {'value': 'timestamp di arrivo del dato ad ODA', 'isConstant': True}
         # Genera il codice della funzione di mapping
         functionLines = []
+        functionLines.append("import json")
         functionLines.append("def mappingFunction(inputData):")
         functionLines.append("    mappedData = {}")
+        functionLines.append("    if isinstance(inputData.get('data'), str):")
+        functionLines.append("        inputData['data'] = json.loads(inputData['data'])")
         for key, items in mappingData.items():
             # se sono nel campo data gli attributi devono essere oggetti con campi value e unit
             if key == "data":
@@ -248,7 +251,10 @@ def generateMappingFunctionFILE():
         arrays = getArrayKeys(destSchemaStructure)
         # Genero il codice della funzione di mapping
         functionLines = []
+        functionLines.append("import json")
         functionLines.append("def mappingFunction(inputData):")
+        functionLines.append("    if isinstance(inputData.get('data'), str):")
+        functionLines.append("        inputData['data'] = json.loads(inputData['data'])")
         mappedData = initializeMappedData(destSchemaStructure)
         # creo i campi obbligatori per ODA
         if 'topic' not in mappedData:
@@ -347,8 +353,11 @@ def generateMappingFunctionSCP():
             mappingData['timestamp'] = {'value': 'timestamp di arrivo del dato ad ODA', 'isConstant': True}
         # Genero il codice della funzione di mapping
         functionLines = []
+        functionLines.append("import json")
         functionLines.append("def mappingFunction(inputData):")
         functionLines.append("    mappedData = {}")
+        functionLines.append("    if isinstance(inputData.get('data'), str):")
+        functionLines.append("        inputData['data'] = json.loads(inputData['data'])")
         keys = []
         # Mappo i campi obbligatori per ODA
         for key in mappingData.keys():
