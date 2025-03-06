@@ -23,8 +23,8 @@ API_GATEWAY_URL = args.apigateway
 n_msg = int(args.number_of_msg)
 
 # Fixed generator_id and topic
-generator_id = "prova_ODA_transform"
-topic = "topic_prova_transform_1"
+generator_id = "generatore_prova"
+topic = "topic_prova"
 
 # Check if the Kafka endpoint is provided as an argument otherwise register to the API Gateway
 if registered:
