@@ -24,7 +24,7 @@ services:
     - zookeeper
     ports:
     - ${kafka_port}:9094
-    restart: always
+    #restart: always
     environment:
       LOG_DIR: "/tmp/logs"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -110,6 +110,8 @@ services:
     depends_on:
       - datapump
       - topicmanager
+      - data_transformer
+      - web_data_transformer
 
   web_data_transformer:
     build:
@@ -123,8 +125,7 @@ services:
     environment:
       WEB_DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
       DATA_TRANSFORMER_PORT: ${data_transformer_port}
-    depends_on:
-      - apigateway
+
 
   data_transformer:
     build: 
@@ -137,7 +138,6 @@ services:
       DATA_TRANSFORMER_PORT: ${data_transformer_port}
       DB_MANAGER_PORT: ${db_manager_port}
     depends_on:
-      - apigateway
       - mysql
 
 volumes:

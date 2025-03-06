@@ -120,6 +120,7 @@ def initDB():
             mapping_function TEXT NOT NULL,
             schema_dest JSON,
             schema_input JSON,
+            schema_dest_name VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """
@@ -148,7 +149,7 @@ def initDB():
 
 
 # Funzione per ottenere la funzione di mapping associata a un generator_id e topic
-def getMappingFunction(generator_id, topic):
+def getMappingFunction(generator_id, topic, destSchemaName):
     try:
         conn = getDBConnection()
         if not conn:
@@ -160,19 +161,17 @@ def getMappingFunction(generator_id, topic):
         SELECT mf.mapping_function, mf.created_at
         FROM mapping_functions mf
         JOIN mapping_dg_links mdl ON mf.id = mdl.mapping_id
-        WHERE mdl.generator_id = %s AND mdl.topic = %s
-        ORDER BY mf.created_at DESC
-        LIMIT 1
+        WHERE mdl.generator_id = %s AND mdl.topic = %s AND mf.schema_dest_name = %s
         """
-        cursor.execute(query, (generator_id, topic))
+        cursor.execute(query, (generator_id, topic, destSchemaName))
         result = cursor.fetchone()
         cursor.close()
         conn.close()
         if result:
             mappingFunction, created_at = result
-            app.logger.info(f"Mapping function found for generator_id: {generator_id}, topic: {topic}, created at: {created_at}")
+            app.logger.info(f"Mapping function found for generator_id: {generator_id}, topic: {topic}, destSchemaName: {destSchemaName}, created at: {created_at}")
             return mappingFunction
-        app.logger.warning(f"No mapping function found for generator_id: {generator_id}, topic: {topic}")
+        app.logger.warning(f"No mapping function found for generator_id: {generator_id}, topic: {topic}, destSchemaName: {destSchemaName}")
         return None
     except Exception as e:
         app.logger.error(f"Error getting mapping function: {str(e)}")
@@ -192,13 +191,18 @@ def saveMappingFunction():
         mappingFunction = data.get('mappingFunction')
         schemaDest = json.dumps(data.get('schemaDest'))
         schemaInput = json.dumps(data.get('schemaInput'))
+        schemaDestName = data.get('schemaDestName')
         # Verifico che tutti i campi necessari siano presenti
-        if not mappingName or not mappingFunction:
+        if not mappingName or not mappingFunction or not schemaDestName:
             return jsonify({'error': 'Nome mapping o funzione mancanti'}), 400
         # Controllo SQL Injection
         if checkSQLInjection(mappingName):
             app.logger.warning(f"Potential SQL injection detected in mapping name: {mappingName}")
             return jsonify({'error': 'Potenziale tentativo di sql-injection'}), 400
+        if checkSQLInjection(schemaDestName):
+            app.logger.warning(f"Potential SQL injection detected in schemaDestName: {schemaDestName}")
+            return jsonify({'error': 'Potenziale tentativo di sql-injection'}), 400
+        # Connessione al database
         conn = getDBConnection()
         if not conn:
             return jsonify({'error': 'Impossibile connettersi al database'}), 500
@@ -212,10 +216,10 @@ def saveMappingFunction():
             return jsonify({'error': f'Esiste gia un mapping con il nome: {mappingName}'}), 409
         # se non esiste già un mapping con quel mome lo inserisco nel db
         insertQuery = """
-        INSERT INTO mapping_functions (mapping_name, mapping_function, schema_dest, schema_input)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO mapping_functions (mapping_name, mapping_function, schema_dest, schema_input, schema_dest_name)
+        VALUES (%s, %s, %s, %s, %s)
         """
-        cursor.execute(insertQuery, (mappingName, mappingFunction, schemaDest, schemaInput))
+        cursor.execute(insertQuery, (mappingName, mappingFunction, schemaDest, schemaInput, schemaDestName))
         conn.commit()
         cursor.close()
         conn.close()
@@ -231,7 +235,7 @@ def saveMappingFunction():
     
 
 # endpoint per la lista dei nomi dei mapping salvati 
-@app.route('/mappingList', methods=['POST'])
+@app.route('/mappingList', methods=['GET'])
 def mappingList():
     try:
         conn = getDBConnection()
@@ -242,6 +246,7 @@ def mappingList():
         # Estraggo tutti i mapping dal db
         selectQuery = "SELECT mapping_name FROM mapping_functions"
         cursor.execute(selectQuery)
+        # row[0] contiene il nome del mapping
         mappingList = [row[0] for row in cursor.fetchall()]
         cursor.close()
         conn.close()
@@ -253,11 +258,9 @@ def mappingList():
     
 
 # endpoint per i dettagli di un mapping
-@app.route('/mappingDetails', methods=['POST'])
-def mappingDetails():
+@app.route('/mappingDetails/<string:mappingName>', methods=['GET'])
+def mappingDetails(mappingName):
     try:
-        data = request.json
-        mappingName = data.get('mappingName')
         # Controllo SQL Injection
         if checkSQLInjection(mappingName):
             app.logger.warning(f"Potential SQL injection detected in mapping name: {mappingName}")
@@ -270,7 +273,7 @@ def mappingDetails():
             return make_response('Impossibile connettersi al database', 500)
         cursor = conn.cursor()
         # Estraggo i dettagli del mapping dal db
-        selectQuery = "SELECT mapping_function, schema_dest, schema_input FROM mapping_functions WHERE mapping_name = %s"
+        selectQuery = "SELECT mapping_function, schema_dest, schema_input, schema_dest_name FROM mapping_functions WHERE mapping_name = %s"
         cursor.execute(selectQuery, (mappingName,))
         mappingDetails = cursor.fetchone()
         cursor.close()
@@ -280,9 +283,10 @@ def mappingDetails():
         response = {
             "mapping_function": mappingDetails[0],
             "schema_dest": mappingDetails[1],
-            "schema_input": mappingDetails[2]
+            "schema_input": mappingDetails[2],
+            "schema_dest_name": mappingDetails[3]
         }
-        app.logger.info(f"Returning mapping details: {response}")
+        app.logger.info(f"Returning mapping details for mapping: {mappingName}")
         return make_response(jsonify(response), 200)
     except Exception as e:
         app.logger.error(f"Error getting mapping details: {str(e)}")
@@ -353,28 +357,28 @@ def queryTransformed():
         msg = request.get_json()
         if not msg:
             return make_response("The request's body is empty", 400)
+        transformParameter = request.args.get('transform')
+        if not transformParameter:
+            return make_response("Transform parameter is missing", 400)
         URL = DB_MANAGER_URL + '/query'
         app.logger.info(f"Sending query to {URL}")
-        x = requests.post(URL, json=msg, params={'zip': 'true'})
+        x = requests.post(URL, json=msg, params={'zip': 'false'})
         x.raise_for_status()
         data = x.json()
         transformData = []
         for record in data:
-            app.logger.info(f"Applying mapping to record: {json.dumps(record, indent=4)}")
-            app.logger.info(f"type of record['data']: {type(record['data'])}")
             generatorId = record.get('generator_id')
             topic = record.get('topic')
-            mappingFunctionCode = getMappingFunction(generatorId, topic)
-            app.logger.info(f"mappingFunction: {mappingFunctionCode}")
+            mappingFunctionCode = getMappingFunction(generatorId, topic, transformParameter)
             if mappingFunctionCode:
                 namespace = {}
                 exec(mappingFunctionCode, namespace)
-                if isinstance(record['data'], str):
-                    record['data'] = json.loads(record['data'])
-                    app.logger.info(f"type of record['data']: {type(record['data'])}")
                 transformedRecord = namespace['mappingFunction'](record)
                 if transformedRecord is not None:
+                    app.logger.info(f"Data transformed for generatorId: {generatorId}, topic: {topic} to {transformParameter}")
                     transformData.append(transformedRecord)
+                else:
+                    app.logger.error(f"Error in mapping function for generatorId: {generatorId}, topic: {topic}, impossible to transform this data in {transformParameter}")
             else:
                 app.logger.error(f"No valid mapping function found for generatorId: {generatorId}, topic: {topic}")
         return make_response(jsonify(transformData), 200)

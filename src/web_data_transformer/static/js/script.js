@@ -1085,10 +1085,18 @@ function modifyInputSchemaElement(elementId, currentValue) {
 function saveMapping() {
     const modal = new bootstrap.Modal(document.getElementById('saveMappingModal'));
     modal.show();
+    // Mostra il campo per il nome dello schema di destinazione solo se lo schema è "FILE"
+    const destSchemaNameContainer = document.getElementById('destSchemaNameContainer');
+    if (selectedSchema === "FILE") {
+        destSchemaNameContainer.style.display = 'block';
+    } else {
+        destSchemaNameContainer.style.display = 'none';
+    }
     // Aggiungo un listener per il pulsante "Invia il mapping" nel modal
     document.getElementById('nameMappingFunction').onclick = function () {
         // Recupero il nome del mapping inserito dall'utente
         const mappingName = document.getElementById('mappingName').value.trim();
+        const destSchemaName = selectedSchema === "FILE" ? document.getElementById('destSchemaName').value.trim() : selectedSchema;
         const errorContainer = document.getElementById('errorContainer');
         const successContainer = document.getElementById('successContainer');
         errorContainer.textContent = ''; 
@@ -1101,12 +1109,19 @@ function saveMapping() {
             errorContainer.style.display = 'block';
             return;
         }
+        // Verifico che il nome dello schema di destinazione sia stato inserito se lo schema è "FILE"
+        if (selectedSchema === "FILE" && !destSchemaName) {
+            errorContainer.textContent = 'Inserisci un nome per lo schema di destinazione.';
+            errorContainer.style.display = 'block';
+            return;
+        }
         // Recupero la funzione di mapping generata
         const mappingFunction = document.getElementById('mappingFunctionContainer').textContent;
         // Creo l'oggetto da inviare al backend
         const mappingData = {
             mappingName: mappingName,
-            mappingFunction: mappingFunction
+            mappingFunction: mappingFunction,
+            destSchemaName: destSchemaName
         };
         // Invio i dati al backend 
         fetch('/saveMappingFunction', {
@@ -1141,6 +1156,7 @@ function saveMapping() {
 // funzione per azzerare il contenuto del modal
 document.getElementById('saveMappingModal').addEventListener('hidden.bs.modal', function () {
     document.getElementById('mappingName').value = ''; 
+    document.getElementById('destSchemaName').value = ''; 
     document.getElementById('errorContainer').textContent = ''; 
     document.getElementById('errorContainer').style.display = 'none';
     document.getElementById('successContainer').textContent = ''; 

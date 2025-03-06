@@ -83,6 +83,7 @@ def uploadDestSchema():
         requestJson = request.get_json()
         # Estrai il valore della destinazione (destSchema, o POLIMI o SCP)
         selectedSchema = requestJson.get('destSchema')
+        session['selectedSchemaName'] = selectedSchema
         # carico il json dello schema richiesto
         jsonStructure = loadSchema(selectedSchema)
         # salvo lo schema nella sessione
@@ -111,6 +112,7 @@ def uploadDestSchemaFile():
         destFilename = secure_filename(file.filename)
         # salvo il nome nella sessione
         session['destFilename'] = destFilename
+        session['selectedSchemaName'] = destFilename
         # creo il path completo e lo salvo
         destSchemaPath = os.path.join(app.config['DEST_FOLDER'], destFilename)
         file.save(destSchemaPath)
@@ -460,6 +462,7 @@ def saveMappingFunction():
         mappingName = mappingData['mappingName']
         schemaDest = session.get('destSchemaStructure')
         schemaInput = session.get('inputSchemaStructure')
+        schemaDestName = mappingData['destSchemaName']
         # Verifica che siano forniti tutti i dati necessari
         if not mappingName or not mappingFunction:
             return jsonify({'error': "Nome o funzione di mapping mancanti"}), 400
@@ -468,7 +471,8 @@ def saveMappingFunction():
             'mappingFunction': mappingFunction,
             'mappingName': mappingName,
             'schemaDest': schemaDest,
-            'schemaInput': schemaInput
+            'schemaInput': schemaInput,
+            'schemaDestName': schemaDestName
         }
         URL = DATA_TRANSFORMER_URL + '/saveMappingFunction'
         app.logger.info("Sending request to URL: " + URL)

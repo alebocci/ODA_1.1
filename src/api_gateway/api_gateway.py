@@ -43,16 +43,16 @@ def query():
         msg = request.get_json()
         if not msg:
             return make_response("Empty query", 404)
-        transformParameter = request.args.get('transform', 'false').lower()
-        if transformParameter == 'true':
+        transformParameter = request.args.get('transform')
+        if transformParameter:
             URL= DATA_TRANSFORMER_URL + '/queryTransformed'
             app.logger.info(f"Sending query to {URL}")
             app.logger.info(f"Query: {msg}")
-            x = requests.post(URL, json=msg, stream=True)
+            x = requests.post(URL, json=msg, params={"transform":transformParameter})
             x.raise_for_status()
             logging.info("Query sent to Data Transformer service")
             trnaformedData = x.json()
-            return make_response(jsonify(trnaformedData), 200)
+            return make_response(json.dumps(trnaformedData, indent=4), 200)
         else:
             URL= DB_MANAGER_URL + '/query'
             app.logger.info(f"Sending query to {URL}")
@@ -119,12 +119,12 @@ def data_transformer_ui():
     return redirect(f"http://{host}:80")
 
 
-@app.route("/mappingList", methods=["POST"])
+@app.route("/mappingList", methods=["GET"])
 def mappingList():
     try:
         URL= DATA_TRANSFORMER_URL + '/mappingList'
         app.logger.info(f"Asking for mapping list to {URL}")
-        x = requests.post(URL)
+        x = requests.get(URL)
         x.raise_for_status()
         app.logger.info(f"Mapping list received: {x.content.decode('utf-8')}")
         return make_response(x.content.decode('utf-8'), 200)
@@ -136,16 +136,27 @@ def mappingList():
         return make_response(repr(e), 500)
     
 
-@app.route("/mappingDetails/<string:name>", methods=["POST"])
-def mapingDetails(name):
+@app.route("/mappingDetails/<string:mappingName>", methods=["GET"])
+def mapingDetails(mappingName):
     try:
-        URL= DATA_TRANSFORMER_URL + '/mappingDetails'
+        URL= DATA_TRANSFORMER_URL + '/mappingDetails/'+mappingName
         app.logger.info(f"Asking for mapping details to {URL}")
-        x = requests.post(URL, json={"mappingName":name})
-        x.raise_for_status()
-        response = json.loads(x.content.decode('utf-8'))
-        app.logger.info(f"Mapping details received: {json.dumps(response, indent=4)}")
-        return make_response(jsonify(response), 200)
+        response = requests.get(URL)
+        response.raise_for_status()
+        response = response.json()
+        app.logger.info(f"Mapping details received")
+        # formatto l'output per renderlo più leggibile
+        if "schema_dest" in response and isinstance(response["schema_dest"], str):
+            try:
+                response["schema_dest"] = json.loads(response["schema_dest"])
+            except json.JSONDecodeError:
+                pass 
+        if "schema_input" in response and isinstance(response["schema_input"], str):
+            try:
+                response["schema_input"] = json.loads(response["schema_input"])
+            except json.JSONDecodeError:
+                pass
+        return make_response(json.dumps(response, indent=4), 200)
     except HTTPError as e:
         app.logger.error(f'HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}')
         return make_response(e.response.text, e.response.status_code)

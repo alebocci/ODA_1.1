@@ -84,8 +84,8 @@ def query():
             return make_response("", 404)
         result = extractResults(result)
 
-        zipParameter = request.args.get('zip', 'false').lower()
-        if zipParameter == 'true':
+        zipParameter = request.args.get('zip', 'true').lower()
+        if zipParameter == 'false':
             app.logger.info('Not compressing response')
             return make_response(jsonify(result), 200)
         else:
