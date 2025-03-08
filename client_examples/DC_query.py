@@ -14,7 +14,7 @@ url = "http://localhost:50005/query"
 
 # Parametri di default per la query
 TOPIC = "BuildingConsumption"
-GENERATOR_ID = "gen_test12"
+GENERATOR_ID = "gen_test1"
 DEST_FORMAT = ['POLIMI', 'SCP']
 HEADERS = {"Content-Type": "application/json"}
 
