@@ -118,12 +118,22 @@ def get_db():
 
 # inzializzazione del database
 def init_db():
-    try:
-        Base.metadata.create_all(bind=engine)
-        logging.info("Database tables created successfully")
-    except SQLAlchemyError as e:
-        logging.error(f"Error during database initialization: {e}")
-
+    maxRetries = 10
+    retryCount = 0
+    while retryCount < maxRetries:
+        try:
+            Base.metadata.create_all(bind=engine)
+            app.logger.info("Database tables created successfully")
+            return
+        except SQLAlchemyError as e:
+            retryCount += 1
+            app.logger.warning(f"Attempt {retryCount}/{maxRetries}: Error during database initialization: {e}")
+            if retryCount < maxRetries:
+                app.logger.info("Retrying in 5 seconds...")
+                import time
+                time.sleep(5)
+            else:
+                app.logger.error(f"Failed to initialize database after {maxRetries} attempts: {e}")
 
 # inizializzo il database
 init_db()
@@ -301,6 +311,48 @@ def linkMapping():
         db.close()
     
 
+# endpoint per rimuovere il collegamento di un mapping a un DG
+@app.route('/unlinkMapping', methods=['POST'])
+def unlinkMapping():
+    try:
+        db = next(get_db())
+        # estraggo il payload dalla richiesta
+        data = request.json
+        if not data:
+            return jsonify({'error': 'Empty request'}), 400
+        mappingName = data.get('mappingName')
+        topic = data.get('topic')
+        generatorId = data.get('generator_id')
+        if checkSQLInjection(mappingName) or checkSQLInjection(topic) or checkSQLInjection(generatorId):
+            app.logger.warning("Potential SQL injection detected")
+            return jsonify({'error': 'Potenziale tentativo di sql-injection'}), 400
+        if not mappingName or not topic or not generatorId:
+            return jsonify({'error': 'Missing mappingName, topic or generator_id'}), 400
+        # Estraggo l'id del mapping 
+        mapping = db.query(MappingFunction).filter(MappingFunction.mapping_name == mappingName).first()
+        if not mapping:
+            return jsonify({'error': f"Mapping '{mappingName}' non trovato"}), 404
+        # Trova il collegamento da rimuovere
+        link_to_remove = db.query(MappingDGLink).filter(
+            MappingDGLink.mapping_id == mapping.id,
+            MappingDGLink.topic == topic,
+            MappingDGLink.generator_id == generatorId
+        ).first()
+        if not link_to_remove:
+            return jsonify({'error': f"Il DG {generatorId} non è collegato al mapping con nome: {mappingName}"}), 404
+        # Rimuovo il collegamento
+        db.delete(link_to_remove)
+        db.commit()
+        app.logger.info(f"Mapping '{mappingName}' unlinked from {generatorId} and {topic}")
+        return jsonify({'success': 'Mapping unlinked'}), 200
+    except SQLAlchemyError as e:
+        db.rollback()
+        app.logger.error(f"Error unlinking mapping: {e}")
+        return jsonify({'error': f"Errore durante la rimozione del collegamento: {e}"}), 500
+    finally:
+        db.close()
+
+        
 # ednpoint per le query dei dati trasformati
 @app.route("/queryTransformed", methods=["POST"])
 def queryTransformed():
@@ -313,7 +365,7 @@ def queryTransformed():
             return make_response("Transform parameter is missing", 400)
         URL = DB_MANAGER_URL + '/query'
         app.logger.info(f"Sending query to {URL}")
-        x = requests.post(URL, json=msg, params={'zip': 'false'})
+        x = requests.post(URL, json=msg, params={'unzip': 'true'})
         x.raise_for_status()
         data = x.json()
         transformData = []

@@ -189,3 +189,27 @@ def linkMapping(name):
         app.logger.error(repr(e))
         return make_response(repr(e), 500)
     
+
+@app.route("/unlinkMapping/<string:name>", methods=["POST"])
+def unlinkMapping(name):
+    try:
+        msg = request.get_json()
+        if not msg:
+            return make_response("The request's body is empty", 400)
+        topic = msg.get("topic")
+        generator_id = msg.get("generator_id")
+        if not topic or not generator_id:
+            return make_response("Missing topic or generator_id", 400)
+        payload = {"mappingName": name, "topic": topic, "generator_id": generator_id}
+        URL = DATA_TRANSFORMER_URL + '/unlinkMapping'
+        app.logger.info(f"Unlinking mapping {name} from {generator_id} and {topic}")
+        x = requests.post(URL, json=payload)
+        x.raise_for_status()
+        app.logger.info(f"Mapping unlinked")
+        return make_response("Mapping unlinked", 200)
+    except HTTPError as e:
+        app.logger.error(f'HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}')
+        return make_response(e.response.text, e.response.status_code)
+    except Exception as e:
+        app.logger.error(repr(e))
+        return make_response(repr(e), 500)

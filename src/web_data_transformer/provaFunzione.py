@@ -1,54 +1,44 @@
 import json
+from datetime import datetime, timedelta
 def mappingFunction(inputData):
     mappedData = {}
     if isinstance(inputData.get('data'), str):
         inputData['data'] = json.loads(inputData['data'])
-    mappedData['data'] = {}
-    mappedData['data']['data'] = {
-        'value': inputData['data'],
-        'unit': 'None'
-    }
-    mappedData['data']['building'] = {
-        'value': inputData['data']['building'],
-        'unit': 'None'
-    }
-    mappedData['data']['buildingId'] = {
-        'value': inputData['data']['building']['buildingId'],
-        'unit': 'None'
-    }
-    mappedData['data']['builingName'] = {
-        'value': inputData['data']['building']['builingName'],
-        'unit': 'None'
-    }
-    mappedData['data']['nOfFloors'] = {
-        'value': inputData['data']['building']['nOfFloors'],
-        'unit': 'None'
-    }
-    mappedData['data']['rooms'] = {
-        'value': inputData['data']['building']['rooms'],
-        'unit': 'None'
-    }
-    
-    mappedData['data']['electricConsumption'] = {
-        'value': inputData['data']['electricConsumption'],
-        'unit': 'kWh'
-    }
-    mappedData['data']['period'] = {
-        'value': inputData['data']['period'],
-        'unit': 'None'
-    }
-    mappedData['data']['end_ts'] = {
-        'value': inputData['data']['period']['end_ts'],
-        'unit': 'None'
-    }
-    mappedData['data']['start_ts'] = {
-        'value': inputData['data']['period']['start_ts'],
-        'unit': 'None'
-    }
     mappedData['generator_id'] = inputData.get('generator_id')
     mappedData['timestamp'] = inputData.get('timestamp')
     mappedData['topic'] = inputData.get('topic')
-    print(json.dumps(mappedData, indent=4))
+    mappedData['data'] = {}
+    mappedData['data']['UrbanDataset'] = {}
+    mappedData['data']['UrbanDataset']['context'] = {}
+    mappedData['data']['UrbanDataset']['context']['producer'] = {'id': 'Solution-ID'}
+    mappedData['data']['UrbanDataset']['context']['timeZone'] = 'UTC+01:00'
+    mappedData['data']['UrbanDataset']['context']['timestamp'] = (datetime.fromisoformat(inputData['timestamp']) + timedelta(hours=+1)).isoformat() 
+    mappedData['data']['UrbanDataset']['context']['coordinates'] = {'latitude': 45, 'longitude': 66}
+    mappedData['data']['UrbanDataset']['specification'] = {}
+    mappedData['data']['UrbanDataset']['specification']['id'] = {'value': 'BuildingElectricConsumption-2.0'}
+    mappedData['data']['UrbanDataset']['specification']['name'] = 'Building Electric Consumption'
+    mappedData['data']['UrbanDataset']['specification']['uri'] = 'https://smartcityplatform.enea.it/specification/semantic/2.0/ontology/scps-ontology-2.0.owl#BuildingElectricConsumption'
+    mappedData['data']['UrbanDataset']['specification']['properties'] = {}
+    mappedData['data']['UrbanDataset']['specification']['properties']['propertyDefinition'] = [
+        {'propertyName': 'BuildingID', 'dataType': 'string', 'unitOfMeasure': 'dimensionless'},
+        {'propertyName': 'BuildingName', 'dataType': 'string', 'unitOfMeasure': 'dimensionless'},
+        {'propertyName': 'ElectricConsumption', 'dataType': 'double', 'unitOfMeasure': 'kilowattHour', 'measurementType': 'average'},
+        {'propertyName': 'period', 'subProperties': {'propertyName': ['start_ts', 'end_ts']}},
+        {'propertyName': 'start_ts', 'dataType': 'dateTime', 'unitOfMeasure': 'dimensionless'},
+        {'propertyName': 'end_ts', 'dataType': 'dateTime', 'unitOfMeasure': 'dimensionless'}
+    ]
+    mappedData['data']['UrbanDataset']['values'] = {}
+    mappedData['data']['UrbanDataset']['values']['line'] = [
+        {
+            'id': 1,
+            'period': {'start_ts': inputData['data']['inizio'], 'end_ts': inputData['data']['fine']},
+            'property': [
+                {'name': 'BuildingID', 'val': inputData['data']['buildingId']},
+                {'name': 'BuildingName', 'val': inputData['data']['buildingName']},
+                {'name': 'ElectricConsumption', 'val': inputData['data']['consumi']}
+            ]
+        }
+    ]
     return mappedData
 
 
