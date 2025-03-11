@@ -7,6 +7,10 @@ h1, h2 {
     color: white;
 }
 
+.title {
+    color: black;
+}
+
 .container {
     display: flex;
     justify-content: space-between;
@@ -31,6 +35,7 @@ h1, h2 {
 .btn-primary {
     border-radius: 30px;
     padding: 10px 20px;
+    background-color: #4e73df;
 }
 
 #buttonAdd {
@@ -243,4 +248,78 @@ h1, h2 {
     display: flex;
     flex-direction: column;
     
+}
+
+.containerTable {
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+    width: 100%; 
+    margin: 0 auto; 
+    padding: 20px; 
+}
+
+.table-bordered {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.table-bordered thead th {
+    background-color: #4e73df;
+    color: white;
+    font-weight: bold;
+    padding: 12px 15px;
+    border: none;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.table-bordered thead tr:first-child th:first-child {
+    border-top-left-radius: 10px;
+}
+
+.table-bordered thead tr:first-child th:last-child {
+    border-top-right-radius: 10px;
+}
+
+.table-bordered tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 10px;
+}
+
+.table-bordered tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 10px;
+}
+
+.table-bordered tbody td {
+    padding: 10px 15px;
+    vertical-align: middle;
+    border: 1px solid #e3e6f0;
+    background-color: #ffffff;
+}
+
+.table-bordered tbody tr:hover {
+    background-color: #f4f7fc;
+}
+
+.table-bordered .btn {
+    border-radius: 30px;
+    padding: 5px 10px;
+    font-size: 14px;
+    margin: 2px;
+}
+
+.table-bordered tbody tr:nth-child(even) {
+    background-color: #f8f9fc;
+}
+
+@media (max-width: 768px) {
+    .table-bordered {
+        display: block;
+        overflow-x: auto;
+    }
 }

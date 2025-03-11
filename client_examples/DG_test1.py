@@ -9,7 +9,7 @@ API_GATEWAY_URL = "http://127.0.0.1:50005"
 INTERVAL_SECONDS = 30  
 TOPIC = "BuildingConsumption"  
 GENERATOR_ID = "gen_test1"  
-MAPPING_NAME = ["test1_to_polimi", "test1_to_scp"]  
+MAPPING_NAME = ["test1_to_polimi", "test1_to_scp", "testCloneScp"]  
 
 def register_to_api_gateway():
     try:

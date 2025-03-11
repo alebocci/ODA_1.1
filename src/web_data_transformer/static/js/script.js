@@ -604,62 +604,51 @@ function drag(ev) {
 // Funzione per gestire il drop
 function drop(ev) {
     ev.preventDefault();
-    // data: percorso dell'elemento nel json (ex: data.buildingId...)
     const data = ev.dataTransfer.getData("text");
     const draggedElement = document.getElementById(data);
-    // Verifico se l'elemento è stato droppato nella dropzone degli attributi
     if (ev.target.classList.contains("dropzone")) {
-        // Verifico se l'elemento è già nella dropzone
         if (!ev.target.contains(draggedElement)) {
-            // Aggiungo l'elemento alla dropzone degli attributi
-            ev.target.appendChild(draggedElement);
-            // Aggiungo i campi per valore e unità di misura solo se è la dropzone degli attributi
+            // Crea una copia dell'elemento trascinato
+            const clonedElement = draggedElement.cloneNode(true);
+            // Aggiungi la copia alla dropzone
+            ev.target.appendChild(clonedElement);
+            // Aggiungi i campi per valore e unità di misura solo se è la dropzone degli attributi
             if (ev.target.id === "dropzone-data") {
-                // Se è un array aggiungo unità a ogni sottoelemento
-                if (draggedElement.classList.contains("array-container")) {
-                    // seleziono tutti gli elementi dell'array
-                    const arrayItems = draggedElement.querySelectorAll(".draggable-item");
+                if (clonedElement.classList.contains("array-container")) {
+                    const arrayItems = clonedElement.querySelectorAll(".draggable-item");
                     arrayItems.forEach(item => {
-                        // aggiungo l'unità di misura
                         addUnitInput(item);
-                        // Rimuovi il bottone di eliminazione se esiste
                         const deleteButton = item.querySelector(".remove-button");
                         if (deleteButton) {
                             deleteButton.remove();
                         }
                     });
-                    // se è un oggetto aggiungo unità a ogni sottoelemento
-                } else if (draggedElement.classList.contains("object-container")) {
-                    const objectItems = draggedElement.querySelectorAll(".draggable-item");
+                } else if (clonedElement.classList.contains("object-container")) {
+                    const objectItems = clonedElement.querySelectorAll(".draggable-item");
                     objectItems.forEach(item => {
                         addUnitInput(item);
-                        // Rimuovi il bottone di eliminazione se esiste
                         const deleteButton = item.querySelector(".remove-button");
                         if (deleteButton) {
                             deleteButton.remove();
                         }
                     });
                 }
-                addUnitInput(draggedElement);
-                // Rimuovi il bottone di eliminazione se esiste
-                const deleteButton = draggedElement.querySelector(".remove-button");
+                addUnitInput(clonedElement);
+                const deleteButton = clonedElement.querySelector(".remove-button");
                 if (deleteButton) {
                     deleteButton.remove();
                 }
             }
-            const deleteButton = draggedElement.querySelectorAll(".remove-button");
-            deleteButton.forEach(button => button.remove());
-            // Aggiungi un pulsante per il ripristino
-            if (!draggedElement.querySelector(".restore-button")) {
+            const deleteButtons = clonedElement.querySelectorAll(".remove-button");
+            deleteButtons.forEach(button => button.remove());
+            if (!clonedElement.querySelector(".restore-button")) {
                 const restoreButton = document.createElement("button");
-                restoreButton.textContent = "Indietro";
+                restoreButton.textContent = "Elimina";
                 restoreButton.className = "restore-button btn btn-secondary btn-sm ms-2";
-                restoreButton.onclick = () => restoreToOrigin(draggedElement, ev.target.id);
-                draggedElement.appendChild(restoreButton);
+                restoreButton.onclick = () => deleteElement(clonedElement, ev.target.id);
+                clonedElement.appendChild(restoreButton);
             }
-            // Regola l'altezza della dropzone
             adjustDropzoneHeight(ev.target);
-            // aggiunge il bottone per il mapping
             document.getElementById('mapButton').classList.remove('hidden');
         }
     }
@@ -704,93 +693,13 @@ function addUnitInput(draggedElement) {
 
 
 // Funzione per ripristinare un elemento alla sezione di origine (POLIMI)
-function restoreToOrigin(element, idDropzone) {
-    const originSection = document.getElementById("inputJsonStructure");
-    const dropzones = document.querySelectorAll('[id^="dropzone"]');
-    if (element.id.includes('[') && element.id.includes(']')) {
-        indexStart = element.id.indexOf('[');
-        indexEnd = element.id.indexOf(']');
-        element.id = element.id.slice(0, indexStart) + element.id.slice(indexEnd + 1);
-    }
-    // Non aggiungeo il pulsante di eliminazione se non è possibile ripristinare l'elemento
-    const position = element.id.split('.');
-    if (position.length == 1) {
-        // Ripristo l'elemento principale alla sua sezione originale
-        originSection.appendChild(element);
-    } else {
-        let path = "";
-        for (let i = 0; i <= position.length - 1; i++) {
-            if (i == position.length - 2) {
-                path += `${position[i]}`;
-                break;
-            } else {
-                path += `${position[i]}.`;
-            }
-        }
-        const container = originSection.querySelector(`[data-key="${path}"] .nested-items`);
-        // Se il percorso non esiste, annullo l'operazione
-        if (!container) {
-            const errorMessage = document.createElement("div");
-            errorMessage.id = "error-message-restore";
-            errorMessage.classList.add("alert", "alert-danger", "mt-2");
-            errorMessage.textContent = `Errore: L'elemento "${path}" non è presente nella sezione dello schema di input. Impossibile ripristinare l'elemento.`;
-            originSection.insertBefore(errorMessage, originSection.firstChild);
-            document.getElementById("error-message-restore").scrollIntoView({ behavior: "smooth" });
-            // Rimuovo l'errore dopo 5 secondi
-            setTimeout(() => {
-                errorMessage.remove();
-            }, 5000);
-            // Mantengo il pulsante di ripristino e non aggiungo il pulsante di eliminazione
-            return;
-        } else {
-            container.appendChild(element);
-        }
-    }
-    // Rimuovo tutti i pulsanti di ripristino presenti nell'elemento
-    const restoreButtons = element.querySelectorAll(".restore-button");
-    restoreButtons.forEach(button => button.remove());
-    // Rimuovo tutti i campi di input relativi all'unità di misura
-    const unitInputs = element.querySelectorAll('input');
-    unitInputs.forEach(input => input.remove());
-    // Aggiungo il pulsante di eliminazione solo se il container esiste
-    const header = element.querySelector(".object-header, .array-header");
-    if (header) {
-        const deleteButton = header.querySelector(".remove-button");
-        if (!deleteButton) {
-            const newDeleteButton = document.createElement("button");
-            newDeleteButton.classList.add("remove-button", "btn", "btn-danger", "btn-sm", "ms-2");
-            newDeleteButton.textContent = "Elimina";
-            newDeleteButton.onclick = () => removeInputSchemaElement(element.id);
-            header.appendChild(newDeleteButton);
-        }
-    }
-    // Aggiungo il pulsante di eliminazione a ogni elemento interno (anche a oggetti e array nidificati)
-    const nestedItems = element.querySelectorAll(".draggable-item");
-    if (nestedItems.length === 0) {
-        const deleteButton = document.createElement("button");
-        deleteButton.classList.add("remove-button", "btn", "btn-danger", "btn-sm");
-        deleteButton.textContent = "Elimina";
-        deleteButton.onclick = () => removeInputSchemaElement(element.id);
-        element.appendChild(deleteButton);
-    } else {
-        nestedItems.forEach(item => {
-            if (item.textContent.trim().endsWith("}") || item.textContent.trim().endsWith("]")) {
-                return;
-            }
-            // Rimuovo eventuali pulsanti di eliminazione esistenti per evitare duplicati
-            const existingDeleteButton = item.querySelector(".remove-button");
-            if (!existingDeleteButton) {
-                const deleteButton = document.createElement("button");
-                deleteButton.classList.add("remove-button", "btn", "btn-danger", "btn-sm");
-                deleteButton.textContent = "Elimina";
-                deleteButton.onclick = () => removeInputSchemaElement(item.id);
-                item.appendChild(deleteButton);
-            }
-        });
-    }
-    // Regolo l'altezza della dropzone da cui è stato rimosso l'elemento
+function deleteElement(element, idDropzone) {
+    // Elimina direttamente l'elemento dalla dropzone
+    element.remove();
+    // Regola l'altezza della dropzone da cui è stato rimosso l'elemento
     adjustDropzoneHeight(document.getElementById(idDropzone));
     // Controllo se tutte le dropzone sono vuote per nascondere il mapButton
+    const dropzones = document.querySelectorAll('[id^="dropzone"]');
     let allDropzonesEmpty = true;
     for (const dropzone of dropzones) {
         if (dropzone.childElementCount > 0) {
@@ -803,6 +712,9 @@ function restoreToOrigin(element, idDropzone) {
         document.getElementById('mappingFunctionContainer').classList.add('hidden');
     }
 }
+
+
+
 
 
 // Funzione per aggiustare l'altezza della dropzone e ripristinare la scritta iniziale se vuota

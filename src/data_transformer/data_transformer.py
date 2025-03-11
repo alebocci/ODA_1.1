@@ -212,6 +212,38 @@ def saveMappingFunction():
         db.close()
     
 
+# endpoint per mostrare i mapping nella pagina web
+@app.route('/showMapping', methods=['GET'])
+def showMapping():
+    try:
+        db = next(get_db())
+        # Estraggo tutti i mapping dal db
+        mappings = db.query(MappingFunction).all()
+        
+        if not mappings:
+            app.logger.info("No mappings found in the database")
+            return make_response(jsonify([]), 200)
+        
+        # Creo una lista di dizionari con i dati essenziali di ogni mapping
+        mapping_list = []
+        for mapping in mappings:
+            mapping_data = {
+                "mapping_name": mapping.mapping_name,
+                "schema_input": mapping.schema_input,
+                "schema_dest_name": mapping.schema_dest_name,
+                "mapping_function": mapping.mapping_function
+            }
+            mapping_list.append(mapping_data)
+        
+        app.logger.info(f"Returning {len(mapping_list)} mappings")
+        return make_response(jsonify(mapping_list), 200)
+    except SQLAlchemyError as e:
+        app.logger.error(f"Error getting mappings: {e}")
+        return make_response(jsonify({"error": f"Errore durante il recupero dei mapping: {e}"}), 500)
+    finally:
+        db.close()
+
+
 # endpoint per la lista dei nomi dei mapping salvati 
 @app.route('/mappingList', methods=['GET'])
 def mappingList():
@@ -249,17 +281,38 @@ def mappingDetails(mappingName):
         if not mapping:
             app.logger.info(f"Mapping '{mappingName}' not found in the database")
             return make_response(f"Mapping '{mappingName}' non trovato", 404)
+        # Estraggo i collegamenti con DG e topic
+        links = db.query(MappingDGLink).filter(MappingDGLink.mapping_id == mapping.id).all()
+        linksData = [{"generator_id": link.generator_id, "topic": link.topic} for link in links]
         response = {
             "mapping_function": mapping.mapping_function,
             "schema_dest": mapping.schema_dest,
             "schema_input": mapping.schema_input,
-            "schema_dest_name": mapping.schema_dest_name
+            "schema_dest_name": mapping.schema_dest_name,
+            "links": linksData
         }
         app.logger.info(f"Returning mapping details for mapping: {mappingName}")
         return make_response(jsonify(response), 200)
     except SQLAlchemyError as e:
         app.logger.error(f"Error getting mapping details: {e}")
         return make_response(f"Errore durante il recupero dei dettagli", 500)
+    finally:
+        db.close()
+
+
+# endpoint per la statistica numero di collegamenti
+@app.route('/numberOfLink', methods=['GET'])
+def numberOfLink():
+    try:
+        db = next(get_db())
+        # Contiamo il numero totale di collegamenti nella tabella mapping_dg_links
+        numberOfLink = db.query(MappingDGLink).count()
+        app.logger.info(f"Numero totale di collegamenti trovati: {numberOfLink}")
+        # Restituiamo il numero totale di collegamenti
+        return jsonify({"numberOfLink": numberOfLink}), 200
+    except SQLAlchemyError as e:
+        app.logger.error(f"Errore durante il recupero del numero di collegamenti: {e}")
+        return jsonify({'error': f"Errore durante il recupero del numero di collegamenti: {e}"}), 500
     finally:
         db.close()
 
@@ -352,7 +405,41 @@ def unlinkMapping():
     finally:
         db.close()
 
-        
+
+# endpoint per eliminare un mapping
+@app.route('/deleteMapping', methods=['DELETE'])
+def deleteMapping():
+    try:
+        db = next(get_db())
+        # Estrai il nome del mapping dal payload
+        data = request.json
+        mappingName = data.get('mappingName')
+        # Verifica che il nome del mapping sia fornito
+        if not mappingName:
+            return jsonify({'error': 'Nome del mapping mancante'}), 400
+        # Controllo SQL Injection
+        if checkSQLInjection(mappingName):
+            app.logger.warning(f"Potential SQL injection detected in mapping name: {mappingName}")
+            return jsonify({'error': 'Potenziale tentativo di sql-injection'}), 400
+        # Trova il mapping da eliminare
+        mapping = db.query(MappingFunction).filter(MappingFunction.mapping_name == mappingName).first()
+        if not mapping:
+            return jsonify({'error': f"Mapping '{mappingName}' non trovato"}), 404
+        # Elimina tutti i collegamenti associati al mapping
+        db.query(MappingDGLink).filter(MappingDGLink.mapping_id == mapping.id).delete()
+        # Elimina il mapping
+        db.delete(mapping)
+        db.commit()
+        app.logger.info(f"Mapping '{mappingName}' eliminato con successo")
+        return jsonify({'success': f"Mapping '{mappingName}' eliminato con successo"}), 200
+    except SQLAlchemyError as e:
+        db.rollback()
+        app.logger.error(f"Error deleting mapping: {e}")
+        return jsonify({'error': f"Errore durante l'eliminazione del mapping: {e}"}), 500
+    finally:
+        db.close()
+
+ 
 # ednpoint per le query dei dati trasformati
 @app.route("/queryTransformed", methods=["POST"])
 def queryTransformed():

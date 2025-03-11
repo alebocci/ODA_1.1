@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ODA_1.1-Genera Funzione Di Mapping</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <!-- div per navigare tra le pagine-->
+  <div class="containerTitle text-center">
+    <h1 class="title mb-4">Genera una funzione di mapping per i tuoi dati</h1>
+    <a class="btn btn-primary mb-4" role="button" href="/">Torna alla pagina principale</a>
+    <a class="btn btn-primary mb-4" role="button" href="/mappings">Visualizza la lista dei mapping</a>
+  </div>
+  <!-- Contenitore principale -->
+  <div class="container">
+    <!-- Modal per mostrare lo schema delle strutture caricate -->
+    <div class="modal fade" id="autoHideModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content card">
+          <div class="modal-header card-header">
+            <h5 class="modal-title" id="modalTitle"></h5>
+          </div>
+          <div class="modal-body" id="modalText">
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal per inserire i campi mancanti -->
+    <div class="modal fade" id="missingFieldsModal" tabindex="-1" aria-labelledby="missingFieldsModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content card">
+          <div class="modal-header card-header">
+            <h5 class="modal-title" id="missingFieldsModalLabel"></h5>
+          </div>
+          <div class="modal-body" id="missingFieldsModalText">
+            
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            <button type="button" class="btn btn-success" id="missingFieldsModalButton">Inserisci</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal per inserire il nome con cui salvare i mapping -->
+    <div class="modal fade" id="saveMappingModal" tabindex="-1" aria-labelledby="saveMappingModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content card">
+          <div class="modal-header card-header">
+            <h5 class="modal-title" id="saveMappingModalLabel">Inserisci il nome da dare alla funzione</h5>
+          </div>
+          <div class="modal-body">
+            <!-- Contenitore per gli errori -->
+            <div id="errorContainer" class="alert alert-danger" style="display: none;"></div>
+            <!-- Contenitore per il successo -->
+            <div id="successContainer" class="alert alert-success" style="display: none;"></div>
+            <div class="mb-3">
+              <label for="mappingName" class="form-label">Nome del mapping:</label>
+              <input type="text" class="form-control" id="mappingName" name="mappingName" required>
+            </div>
+            <div class="mb-3" id="destSchemaNameContainer" style="display: none;">
+              <label for="destSchemaName" class="form-label">Nome dello Schema di Destinazione</label>
+              <input type="text" class="form-control" id="destSchemaName" placeholder="Inserisci il nome dello schema di destinazione">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            <button type="button" class="btn btn-success" id="nameMappingFunction">Salva ed invia</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- metà dello schema di partenza -->
+    <div class="half">
+      <!-- Mensaggi di errore -->
+      <div id="errorMessageInput" class="alert alert-danger d-flex justify-content-between align-items-center" style="display: none !important;">
+        <strong>Errore!</strong> <span id="errorTextInput"></span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('errorMessageInput')"></button>
+      </div>
+      <!-- Mensaggi di successo -->
+      <div id="successMessageInput" class="alert alert-success d-flex justify-content-between align-items-center" style="display: none !important;">
+        <strong>Successo!</strong> <span id="successTextInput"></span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('successMessageInput')"></button>
+      </div>
+      <!-- Container del Form per caricare lo schema di input-->
+      <div class="card shadow-lg">
+        <div class="card-header text-center">
+            <h1>Carica lo schema di partenza</h1>
+        </div>
+        <div class="card-body">
+            <form id="uploadInputSchema" enctype="multipart/form-data">
+                <div class="mb-4">
+                    <input type="file" class="form-control" id="inputSchema" name="inputSchema" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Carica</button>
+            </form>
+        </div>
+      </div>
+      <!-- Parser per lo schema di input-->
+      <div id="inputJsonEditor" class="mt-4 mb-4" style="display:none;">
+        <div class="card shadow-lg">
+            <div class="card-header">
+                <h2>Mappa i campi di partenza in quelli destinazione</h2>
+            </div>
+            <div class="card-body">
+                <div id="inputJsonStructure"></div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <!-- metà dello schema di destinazione -->
+    <div class="half">
+      <!-- Mensaggi di errore -->
+      <div id="errorMessageDest" class="alert alert-danger d-flex justify-content-between align-items-center" style="display: none !important;">
+        <strong>Errore!</strong> <span id="errorTextDest"></span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('errorMessageDest')"></button>
+      </div>
+      <!-- Mensaggi di successo -->
+      <div id="successMessageDest" class="alert alert-success d-flex justify-content-between align-items-center" style="display: none !important;">
+        <strong>Successo!</strong> <span id="successTextDest"></span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('successMessageDest')"></button>
+      </div>
+      <!-- Container del Form per scegliere lo schema di destinazione-->
+      <div class="card shadow-lg">
+        <div class="card-header text-center">
+            <h1>Scegli lo schema di destinazione</h1>
+        </div>
+        <div class="card-body">
+          <div class="row">
+              <div class="col-md-6">
+                  <form id="uploadDestSchemaSelect" enctype="multipart/form-data">
+                      <div class="mb-4" id="destSchemaSelect">
+                          <select class="form-select" id="destSchema" name="destSchema" aria-label="Default select example">
+                              <option value="Scegli lo schema di destinazione">Seleziona uno schema</option>
+                              <option value="POLIMI">Polimi</option>
+                              <option value="SCP">UrbanDataset-BuildingElectricConsumption-2.0</option>
+                          </select>
+                      </div>
+                      <button type="submit" class="btn btn-primary" id="destButton">Seleziona</button>
+                  </form>
+              </div>
+              <div class="col-md-6">
+                  <form id="uploadDestSchemaFile" enctype="multipart/form-data">
+                      <div class="mb-4">
+                          <input type="file" class="form-control" id="destSchemaFile" name="destSchemaFile" required>
+                      </div>
+                      <button type="submit" class="btn btn-primary">Carica</button>
+                  </form>
+              </div>
+          </div>
+        </div>
+      </div>
+      <!-- Parser per lo schema destinazione-->
+      <div id="destJsonEditor" class="mt-4 mb-4" style="display:none;">
+        <div class="card shadow-lg">
+            <div class="card-header">
+                <h2>Mappa i campi di partenza in quelli destinazione</h2>
+            </div>
+            <div class="card-body">
+                <!-- Qui verranno inserite dinamicamente le card con le informazioni dello schema destinazione -->
+                <div id="destJsonStructure"></div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Container per il bottone di creazione della funzione di mapping -->
+  <div class="text-center">
+    <button id="mapButton" class="btn btn-primary mb-3 hidden" onclick="collectMapping()">Crea la funzione di mapping</button>
+  </div>
+  <!-- Container per la funzione di mapping -->
+  <pre id="mappingFunctionContainer" class="prettify mt-4 hidden"></pre>
+  <div class="text-center">
+    <button id="saveMapping" class="btn btn-primary mb-3 hidden" onclick="saveMapping()">Invia funzione a ODA</button>
+  </div>
+  
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

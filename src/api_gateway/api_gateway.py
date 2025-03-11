@@ -213,3 +213,20 @@ def unlinkMapping(name):
     except Exception as e:
         app.logger.error(repr(e))
         return make_response(repr(e), 500)
+    
+
+@app.route("/deleteMapping/<string:name>", methods=["DELETE"])
+def deleteMapping(name):
+    try:
+        URL = DATA_TRANSFORMER_URL + '/deleteMapping'
+        app.logger.info(f"Deleting mapping {name}")
+        x = requests.delete(URL, json={'mappingName': name})
+        x.raise_for_status()
+        app.logger.info(f"Mapping {name} deleted")
+        return make_response("Mapping deleted", 200)
+    except HTTPError as e:
+        app.logger.error(f'HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}')
+        return make_response(e.response.text, e.response.status_code)
+    except Exception as e:
+        app.logger.error(repr(e))
+        return make_response(repr(e), 500)

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ODA_1.1-Visualizza Mapping</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- div per navigare tra le pagine-->
+    <div class="containerTitle text-center">
+        <h1 class="title mb-4">Funzioni di mapping</h1>
+        <a class="btn btn-primary mb-4" role="button" href="/">Torna alla pagina principale</a>
+        <a class="btn btn-primary mb-4" role="button" href="/generateFunction">Genera una nuova funzione di mapping</a>
+        <!-- Mensaggi di errore -->
+        <div id="errorMessage" class="alert alert-danger d-flex justify-content-between align-items-center" style="display: none !important;">
+            <strong>Errore!</strong> <span id="errorText"></span>
+            <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('errorMessage')">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <!-- Mensaggi di successo -->
+        <div id="successMessage" class="alert alert-success d-flex justify-content-between align-items-center" style="display: none !important;">
+            <strong>Successo!</strong> <span id="successText"></span>
+            <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('successMessage')">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    </div>
+    <!-- container principale-->
+    <div class="container mt-5">
+        <!-- Modal per collegare un mapping a un DG e topic -->
+        <div class="modal fade" id="linkMappingModal" tabindex="-1" aria-labelledby="linkMappingModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+                <div class="modal-content card">
+                    <div class="modal-header card-header">
+                        <h5 class="modal-title" id="linkMappingModalLabel">Collega Mapping</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Contenitore per gli errori -->
+                        <div id="errorContainerLink" class="alert alert-danger" style="display: none;"></div>
+                        <!-- Contenitore per il successo -->
+                        <div id="successContainerLink" class="alert alert-success" style="display: none;"></div>
+                        <div class="mb-3">
+                            <label for="generatorId" class="form-label">Generator ID:</label>
+                            <input type="text" class="form-control" id="generatorId" name="generatorId" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="topic" class="form-label">Topic:</label>
+                            <input type="text" class="form-control" id="topic" name="topic" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Chiudi</button>
+                        <button type="button" class="btn btn-success" id="linkMappingButton">Collega</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal per scollegare un mapping da un DG e topic -->
+        <div class="modal fade" id="unlinkMappingModal" tabindex="-1" aria-labelledby="unlinkMappingModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+                <div class="modal-content card">
+                    <div class="modal-header card-header">
+                        <h5 class="modal-title" id="unlinkMappingModalLabel">Scollega Mapping</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Contenitore per gli errori -->
+                        <div id="errorContainerUnlink" class="alert alert-danger" style="display: none;"></div>
+                        <!-- Contenitore per il successo -->
+                        <div id="successContainerUnlink" class="alert alert-success" style="display: none;"></div>
+                        <div class="mb-3">
+                            <label for="unlinkGeneratorId" class="form-label">Generator ID:</label>
+                            <input type="text" class="form-control" id="unlinkGeneratorId" name="unlinkGeneratorId" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="unlinkTopic" class="form-label">Topic:</label>
+                            <input type="text" class="form-control" id="unlinkTopic" name="unlinkTopic" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Chiudi</button>
+                        <button type="button" class="btn btn-warning" id="unlinkMappingButton">Scollega</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal per confermare l'eliminazione del mapping -->
+        <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content card">
+                <div class="modal-header card-header">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Conferma eliminazione</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                </div>
+                <div class="modal-body">
+                Sei sicuro di voler eliminare il mapping "<span id="mappingNameToDelete"></span>"?
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteButton">Elimina</button>
+                </div>
+            </div>
+            </div>
+        </div>
+        <!-- tabella per mostrare i mapping-->
+         <div class="containerTable">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Nome Mapping</th>
+                        <th>Formato schema_input</th>
+                        <th>Nome dello schema destinazione</th>
+                        <th>Funzione di Mapping</th>
+                        <th>Collegamenti esistenti</th>
+                        <th>Dettagli schema_input e mapping</th>
+                        <th>Collega il mapping</th>
+                        <th>Scollega il mapping</th>
+                        <th>Elimina il mapping</th>
+                    </tr>
+                </thead>
+                <tbody id="mappingsTableBody">
+                    <!-- dati inseriti dinamicamente con js -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal per visualizzare i dettagli di un mapping -->
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content card">
+                <div class="modal-header card-header">
+                    <h5 class="modal-title" id="detailsModalLabel">Dettagli Mapping</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="modalBodyContent">
+                    <!-- dati inseriti dinamicamente con js -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/scriptMapping.js') }}"></script>
+</body>
+</html>

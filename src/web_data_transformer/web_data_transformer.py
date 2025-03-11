@@ -37,8 +37,135 @@ def loadSchema(schemaName):
 # endpoint per la pagina principale
 @app.route('/')
 def index():
-    app.logger.info("Serving web page")
+    app.logger.info("Serving home page")
     return render_template('index.html')
+
+@app.route('/generateFunction')
+def generateFunction():
+    app.logger.info("Serving generate function page")
+    return render_template('generateFunction.html')
+
+@app.route('/mappings')
+def mappings():
+    app.logger.info("Serving mappings page")
+    return render_template('mappings.html')
+
+# Endpoint per inoltrare la richiesta di visualizzazione dei mapping a data_transformer
+@app.route('/showMapping', methods=['GET'])
+def showMapping():
+    try:
+        # Inoltra la richiesta al backend data_transformer
+        URL = DATA_TRANSFORMER_URL + '/showMapping'
+        app.logger.info("Sending request to URL: " + URL)
+        response = requests.get(URL)
+        app.logger.info("Request sent to data_transformer")
+        # Se la richiesta è andata a buon fine, restituisci la risposta
+        if response.status_code == 200:
+            return jsonify(response.json()), 200
+        else:
+            return jsonify({'error': f"Errore durante il recupero dei mapping: {response.status_code}"}), response.status_code
+    except Exception as e:
+        # Se c'è un errore, restituisci un messaggio di errore
+        return jsonify({'error': f"Errore durante l'inoltro della richiesta: {str(e)}"}), 500
+
+# endpoint per inoltrare la richiesta di visualizzazione dei dettagli di un mapping
+@app.route('/mappingDetails/<string:mappingName>', methods=['GET'])
+def mappingDetails(mappingName):
+    try:
+        # Inoltra la richiesta al backend data_transformer
+        URL = DATA_TRANSFORMER_URL + '/mappingDetails/'+mappingName
+        app.logger.info("Sending request to URL: " + URL)
+        response = requests.get(URL)
+        app.logger.info("Request sent to data_transformer")
+        # Se la richiesta è andata a buon fine, restituisci la risposta
+        if response.status_code == 200:
+            return jsonify(response.json()), 200
+        else:
+            return jsonify({'error': f"Errore durante il recupero dei mapping: {response.status_code}"}), response.status_code
+    except Exception as e:
+        # Se c'è un errore, restituisci un messaggio di errore
+        return jsonify({'error': f"Errore durante l'inoltro della richiesta: {str(e)}"}), 500
+
+# endpoint per la statistica numero di collegamenti
+@app.route('/numberOfLink', methods=['GET'])
+def numberOfLink():
+    try:
+        # Inoltra la richiesta al backend data_transformer
+        URL = DATA_TRANSFORMER_URL + '/numberOfLink'
+        app.logger.info("Sending request to URL: " + URL)
+        response = requests.get(URL)
+        app.logger.info("Request sent to data_transformer")
+        # Se la richiesta è andata a buon fine, restituisci la risposta
+        if response.status_code == 200:
+            return jsonify(response.json()), 200
+        else:
+            return jsonify({'error': f"Errore durante il recupero del numero di collegamenti dei mapping: {response.status_code}"}), response.status_code
+    except Exception as e:
+        # Se c'è un errore, restituisci un messaggio di errore
+        return jsonify({'error': f"Errore durante l'inoltro della richiesta: {str(e)}"}), 500
+
+# endpoint per inoltrare la richiesta di collegare un DG a un mapping
+@app.route('/linkMapping', methods=['POST'])
+def linkMapping():
+    try:
+        URL = DATA_TRANSFORMER_URL + '/linkMapping'
+        app.logger.info("Sending request to URL: " + URL)
+        data = request.json
+        response = requests.post(URL, json=data)
+        app.logger.info("Request sent to data_transformer")
+        # Se la richiesta è andata a buon fine, restituisci la risposta
+        if response.status_code == 200:
+            return jsonify(response.json()), 200
+        else:
+            return jsonify({'error': response.json()['error']}), response.status_code
+    except Exception as e:
+        # Se c'è un errore, restituisci un messaggio di errore
+        return jsonify({'error': f"Errore durante l'inoltro della richiesta: {str(e)}"}), 500
+
+# endpoint per inoltrare la richiesta di collegare un DG a un mapping
+@app.route('/unlinkMapping', methods=['POST'])
+def unlinkMapping():
+    try:
+        URL = DATA_TRANSFORMER_URL + '/unlinkMapping'
+        app.logger.info("Sending request to URL: " + URL)
+        data = request.json
+        response = requests.post(URL, json=data)
+        app.logger.info("Request sent to data_transformer")
+        # Se la richiesta è andata a buon fine, restituisci la risposta
+        if response.status_code == 200:
+            return jsonify(response.json()), 200
+        else:
+            return jsonify({'error': response.json()['error']}), response.status_code
+    except Exception as e:
+        # Se c'è un errore, restituisci un messaggio di errore
+        return jsonify({'error': f"Errore durante l'inoltro della richiesta: {str(e)}"}), 500
+    
+# endpoint per inoltrare la richiesta di eliminare un mapping
+@app.route('/deleteMapping', methods=['DELETE'])
+def deleteMapping():
+    try:
+        # Ottieni i dati inviati dal frontend
+        mappingData = request.get_json()
+        mappingName = mappingData.get('mappingName')
+        
+        # Verifica che il nome del mapping sia fornito
+        if not mappingName:
+            return jsonify({'error': 'Nome del mapping mancante'}), 400
+        
+        # Inoltra la richiesta al backend data_transformer
+        URL = DATA_TRANSFORMER_URL + '/deleteMapping'
+        app.logger.info("Sending request to URL: " + URL)
+        response = requests.delete(URL, json={'mappingName': mappingName})
+        app.logger.info("Request sent to data_transformer")
+        
+        # Se la richiesta è andata a buon fine, restituisci la risposta
+        if response.status_code == 200:
+            return jsonify(response.json()), 200
+        else:
+            return jsonify({'error': f"Errore durante l'eliminazione del mapping: {response.status_code}"}), response.status_code
+    except Exception as e:
+        # Se c'è un errore, restituisci un messaggio di errore
+        return jsonify({'error': f"Errore durante l'inoltro della richiesta: {str(e)}"}), 500
 
 # endpoint per il caricamento del file JSON con lo schema di partenza e ritornare la struttura del json al frontend
 @app.route('/uploadInputSchema', methods=['POST'])
