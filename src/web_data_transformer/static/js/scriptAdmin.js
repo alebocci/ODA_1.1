@@ -66,6 +66,12 @@ function loadMappings() {
                                     <td>
                                         <button class="btn btn-success btn-sm" onclick="linkMapping('${mapping.mapping_name}')">Link</button>
                                     </td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm" onclick="unlinkMapping('${mapping.mapping_name}')">Unlink</button>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteMapping('${mapping.mapping_name}')">Elimina</button>
+                                    </td>
                                 </tr>
                             `;
                             mappingsTableBody.insertAdjacentHTML('beforeend', row);
@@ -231,6 +237,70 @@ document.addEventListener('DOMContentLoaded', function() {
     loadMappings();
 });
 
+// Funzione per scollegare un mapping da un DG e un topic
+function unlinkMapping(mappingName) {
+    currentMappingName = mappingName; // Memorizza il nome del mapping
+    const modalElement = document.getElementById('unlinkMappingModal');
+    // Pulisci i campi prima di mostrare il modal
+    resetUnlinkModalFields();
+    // Crea e salva l'istanza del modal
+    currentModal = new bootstrap.Modal(modalElement);
+    currentModal.show();
+    // Aggiungo un listener per il pulsante "Scollega" nel modal
+    document.getElementById('unlinkMappingButton').onclick = function () {
+        // Recupero i valori inseriti dall'utente
+        const generatorId = document.getElementById('unlinkGeneratorId').value.trim();
+        const topic = document.getElementById('unlinkTopic').value.trim();
+        const errorContainer = document.getElementById('errorContainerUnlink');
+        const successContainer = document.getElementById('successContainerUnlink');
+
+        // Azzero i messaggi di errore e successo
+        errorContainer.textContent = '';
+        errorContainer.style.display = 'none';
+        successContainer.textContent = '';
+        successContainer.style.display = 'none';
+
+        // Verifico che i campi siano stati inseriti
+        if (!generatorId || !topic) {
+            errorContainer.textContent = 'Devi inserire sia il generator_id che il topic.';
+            errorContainer.style.display = 'block';
+            return;
+        }
+
+        // Creo l'oggetto da inviare al backend
+        const mappingData = {
+            mappingName: currentMappingName,
+            generator_id: generatorId,
+            topic: topic
+        };
+
+        // Invio i dati al backend
+        fetch('/unlinkMapping', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(mappingData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                errorContainer.textContent = data.error;
+                errorContainer.style.display = 'block';
+            } else {
+                successContainer.textContent = 'Mapping scollegato con successo!';
+                successContainer.style.display = 'block';
+                loadMappings();
+            }
+        })
+        .catch(error => {
+            console.error('Errore:', error);
+            errorContainer.textContent = 'Errore durante lo scollegamento del mapping.';
+            errorContainer.style.display = 'block';
+        });
+    };
+}
+
 // Funzione per azzerare manualmente i campi del modal di scollegamento
 function resetUnlinkModalFields() {
     document.getElementById('unlinkGeneratorId').value = '';
@@ -258,3 +328,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Funzione per eliminare un mapping
+function deleteMapping(mappingName) {
+    // Mostra il modal di conferma
+    document.getElementById('mappingNameToDelete').textContent = mappingName;
+    $('#confirmDeleteModal').modal('show');
+    document.getElementById('confirmDeleteButton').onclick = function () {
+        // Invia una richiesta POST al backend per eliminare il mapping
+        fetch('/deleteMapping', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ mappingName: mappingName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError(data.error);
+            } else {
+                showSuccess(`Mapping "${mappingName}" eliminato con successo!`);
+                // Ricarica la lista dei mapping dopo l'eliminazione
+                loadMappings();
+            }
+        })
+        .catch(error => {
+            console.error('Errore:', error);
+            showError('Errore durante l\'eliminazione del mapping.');
+        });
+        // Chiudi il modal dopo l'eliminazione
+        $('#confirmDeleteModal').modal('hide');
+    }
+}

@@ -87,7 +87,7 @@ def query():
         zipParameter = request.args.get('unzip', 'false').lower()
         if zipParameter == 'true':
             app.logger.info('Not compressing response')
-            return make_response(jsonify(result), 200)
+            return make_response(json.dumps(result).encode('utf8'), 200)
         else:
             app.logger.info('Compressing response')
             content = gzip.compress(json.dumps(result).encode('utf8'),mtime=0)

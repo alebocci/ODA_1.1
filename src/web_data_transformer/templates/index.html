@@ -28,6 +28,10 @@
             font-weight: 700;
             color: var(--primary-color) !important;
         }
+
+        .nav-link {
+            color: #4e73df !important;
+        }
         
         .hero-section {
             background-color: var(--primary-color);
@@ -144,6 +148,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/mappings">Visualizza Mapping</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/query">Invia query</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -175,17 +182,24 @@
     <!-- Quick Actions -->
     <div class="container quick-actions">
         <div class="row">
-            <div class="col-md-6 mb-4">
+            <div class="col-md-4 mb-4">
                 <div class="d-grid">
                     <button class="btn btn-primary btn-lg" onclick="redirect_function()">
                         <i class="fas fa-plus me-2"></i> Genera Nuova Funzione
                     </button>
                 </div>
             </div>
-            <div class="col-md-6 mb-4">
+            <div class="col-md-4 mb-4">
                 <div class="d-grid">
                     <button class="btn btn-primary btn-lg" onclick="redirect_mappings()">
                         <i class="fas fa-list me-2"></i> Gestisci Funzioni Esistenti
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="d-grid">
+                    <button class="btn btn-primary btn-lg" onclick="redirect_query()">
+                        <i class="fas fa-code-branch me-2"></i> Invia una query
                     </button>
                 </div>
             </div>

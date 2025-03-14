@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ODA_1.1-Invia query</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fas fa-code-branch me-2"></i>ODA Mapping</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/generateFunction">Crea Mapping</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/mappings">Visualizza Mapping</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/query">Invia query</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+       <!-- Messaggi di errore e successo -->
+       <div class="containerTitle text-center">
+        <div id="errorMessage" class="alert alert-danger d-flex justify-content-between align-items-center" style="display: none !important;">
+            <strong>Errore!</strong> <span id="errorText"></span>
+            <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('errorMessage')">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div id="successMessage" class="alert alert-success d-flex justify-content-between align-items-center" style="display: none !important;">
+            <strong>Successo!</strong> <span id="successText"></span>
+            <button type="button" class="btn-close" aria-label="Close" onclick="closeMessage('successMessage')">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Form per inviare la query -->
+    <div class="container-fluid mt-5">
+        <div class="card w-100" style="max-width: 800px; margin: auto;">
+            <div class="card-header">
+                <h5 class="card-title">Invia Query</h5>
+            </div>
+            <div class="card-body">
+                <form id="queryForm">
+                    <div class="form-group">
+                        <label for="start">Start (YYYY-MM-DDTHH:MM:SSZ)</label>
+                        <input type="text" class="form-control" id="start" name="start" placeholder="Es. 2023-01-01T00:00:00Z">
+                    </div>
+                    <div class="form-group">
+                        <label for="stop">Stop (YYYY-MM-DDTHH:MM:SSZ)</label>
+                        <input type="text" class="form-control" id="stop" name="stop" placeholder="Es. 2023-12-31T23:59:59Z">
+                    </div>
+                    <div class="form-group">
+                        <label for="topic">Topic</label>
+                        <input type="text" class="form-control" id="topic" name="topic" placeholder="Inserisci il topic">
+                    </div>
+                    <div class="form-group">
+                        <label for="generator_id">Generator ID</label>
+                        <input type="text" class="form-control" id="generator_id" name="generator_id" placeholder="Inserisci il generator ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="schema">Schema di destinazione</label>
+                        <select class="form-control" id="schema" name="schema">
+                            <option value="">Nessuno</option>
+                            <option value="POLIMI">POLIMI</option>
+                            <option value="SCP">SCP</option>
+                            <!-- Aggiungi altri schemi se necessario -->
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" onclick="resetLink()">Invia Query</button>
+                </form>
+                <div id="previewContainer" class="mt-4" style="display: none;">
+                    <h5>Anteprima Risultati</h5>
+                    <pre id="previewData" class="border p-3 bg-light"></pre>
+                    <button id="downloadButton" class="btn btn-success mt-3" style="display: none;">
+                        <i class="fas fa-download me-2"></i>Scarica JSON
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <script src="{{ url_for('static', filename='js/scriptQuery.js') }}"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

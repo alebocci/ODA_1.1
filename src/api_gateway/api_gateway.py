@@ -48,11 +48,11 @@ def query():
             URL= DATA_TRANSFORMER_URL + '/queryTransformed'
             app.logger.info(f"Sending query to {URL}")
             app.logger.info(f"Query: {msg}")
-            x = requests.post(URL, json=msg, params={"transform":transformParameter})
+            x = requests.post(URL, json=msg, params={"transform":transformParameter}, stream=True)
             x.raise_for_status()
             logging.info("Query sent to Data Transformer service")
-            trnaformedData = x.json()
-            return make_response(json.dumps(trnaformedData, indent=4), 200)
+            resp = make_response(x.raw.read(), x.status_code, x.headers.items())
+            return resp
         else:
             URL= DB_MANAGER_URL + '/query'
             app.logger.info(f"Sending query to {URL}")
@@ -111,13 +111,6 @@ def register_dg():
         app.logger.error(repr(e))
         return make_response(repr(e), 500)
     
-
-@app.route("/data_transformer_ui", methods=["GET"])
-def data_transformer_ui():
-    host = request.host.split(':')[0] 
-    logging.info(f"Redirecting to data transformer web page") 
-    return redirect(f"http://{host}:80")
-
 
 @app.route("/mappingList", methods=["GET"])
 def mappingList():

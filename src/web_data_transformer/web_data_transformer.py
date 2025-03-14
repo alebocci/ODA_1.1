@@ -1,9 +1,13 @@
+import base64
 from datetime import datetime
+import gzip
 import json
 import logging
 import os
 import sys
-from flask import Flask, render_template, request, jsonify, session
+import zipfile
+import io
+from flask import Flask, Response, make_response, render_template, request, jsonify, session
 import requests
 from werkzeug.utils import secure_filename
 
@@ -24,6 +28,9 @@ os.makedirs(DEST_FOLDER, exist_ok=True)
 os.makedirs(DEST_DEFAULT_FOLDER, exist_ok=True)
 DATA_TRANSFORMER_PORT = os.environ["DATA_TRANSFORMER_PORT"]
 DATA_TRANSFORMER_URL = "http://datatransformer:"+DATA_TRANSFORMER_PORT
+API_GATEWAY_PORT= os.environ["API_GATEWAY_PORT"]
+API_GATEWAY_URL = "http://apigateway:"+API_GATEWAY_PORT
+
 
 # Funzione per caricare uno schema specifico dalla caretella di default
 def loadSchema(schemaName):
@@ -33,8 +40,13 @@ def loadSchema(schemaName):
     with open(schemaPath, 'r') as f:
         return json.load(f)
     
+# endpoint per la pagina dell'admin
+@app.route('/admin')
+def admin():
+    app.logger.info("Serving admin page")
+    return render_template('admin.html')
 
-# endpoint per la pagina principale
+# endpoint per le pagine web
 @app.route('/')
 def index():
     app.logger.info("Serving home page")
@@ -49,6 +61,46 @@ def generateFunction():
 def mappings():
     app.logger.info("Serving mappings page")
     return render_template('mappings.html')
+
+@app.route('/query', methods=['GET', 'POST'])
+def query():
+    try:
+        if request.method == 'GET':
+            app.logger.info('Serving query page')
+            return render_template('query.html')
+        else:
+            queryPayload = request.get_json()
+            schema = queryPayload.get('schema', '')
+            
+            if schema == '':
+                URL = API_GATEWAY_URL + '/query'
+            else:
+                URL = API_GATEWAY_URL + '/query?transform=' + schema
+            app.logger.info(f"Sending query request to {URL}")
+            response = requests.post(URL, json=queryPayload, stream=True)
+            response.raise_for_status()
+            content = response.content
+            content = json.loads(content.decode('utf-8'))
+            # estraggo un anteprima del contenuto
+            app.logger.info("extracting preview")
+            preview = content[:5] if len(content) > 5 else content
+            # stringa json
+            jsonData = json.dumps(content).encode('utf-8')
+            # Comprimi con gzip
+            compressedData = io.BytesIO()
+            with gzip.GzipFile(fileobj=compressedData, mode='w') as f:
+                f.write(jsonData)
+            # Converti in base64 per inviare al frontend
+            base64Data = base64.b64encode(compressedData.getvalue()).decode('utf-8')
+            app.logger.info("Sending compressing data base64")
+            return jsonify({
+                'preview': preview,
+                'compressed_data': base64Data,
+                'file_extension': 'gzip'
+            })
+    except Exception as e:
+            return jsonify({'error': f"Errore durante l'inoltro della richiesta: {str(e)}"}), 500
+
 
 # Endpoint per inoltrare la richiesta di visualizzazione dei mapping a data_transformer
 @app.route('/showMapping', methods=['GET'])

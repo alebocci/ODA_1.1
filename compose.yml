@@ -125,6 +125,7 @@ services:
     environment:
       WEB_DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
       DATA_TRANSFORMER_PORT: ${data_transformer_port}
+      API_GATEWAY_PORT: ${api_gateway_port}
 
 
   data_transformer:

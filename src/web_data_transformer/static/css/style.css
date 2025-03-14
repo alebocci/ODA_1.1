@@ -323,3 +323,12 @@ h1, h2 {
         overflow-x: auto;
     }
 }
+
+.navbar-brand {
+    font-weight: 700;
+    color: #4e73df !important;
+}
+
+.nav-link {
+    color: #4e73df !important;
+}

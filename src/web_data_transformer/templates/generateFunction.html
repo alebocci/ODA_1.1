@@ -6,14 +6,34 @@
   <title>ODA_1.1-Genera Funzione Di Mapping</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-  <!-- div per navigare tra le pagine-->
-  <div class="containerTitle text-center">
-    <h1 class="title mb-4">Genera una funzione di mapping per i tuoi dati</h1>
-    <a class="btn btn-primary mb-4" role="button" href="/">Torna alla pagina principale</a>
-    <a class="btn btn-primary mb-4" role="button" href="/mappings">Visualizza la lista dei mapping</a>
-  </div>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <div class="container">
+        <a class="navbar-brand" href="/"><i class="fas fa-code-branch me-2"></i>ODA Mapping</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/generateFunction">Crea Mapping</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/mappings">Visualizza Mapping</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="/query">Invia query</a>
+              </li>
+            </ul>
+        </div>
+    </div>
+  </nav>
   <!-- Contenitore principale -->
   <div class="container">
     <!-- Modal per mostrare lo schema delle strutture caricate -->
@@ -180,6 +200,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/scriptGenerateFunction.js') }}"></script>
 </body>
 </html>

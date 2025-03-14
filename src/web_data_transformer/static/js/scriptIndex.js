@@ -6,6 +6,10 @@ function redirect_mappings() {
     window.location.href = "/mappings";
 }
 
+function redirect_query() {
+    window.location.href = "/query";
+}
+
 
 function closeMessage(id) {
     document.getElementById(id).style.display = 'none';

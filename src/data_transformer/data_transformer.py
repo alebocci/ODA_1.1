@@ -1,3 +1,4 @@
+import gzip
 import logging
 import requests
 import sys
@@ -471,7 +472,13 @@ def queryTransformed():
                     app.logger.error(f"Error in mapping function for generatorId: {generatorId}, topic: {topic}, impossible to transform this data in {transformParameter}")
             else:
                 app.logger.error(f"No valid mapping function found for generatorId: {generatorId}, topic: {topic}")
-        return make_response(jsonify(transformData), 200)
+        # Comprimere i dati trasformati e restituirli come file ZIP
+        app.logger.info('Compressing transformed data')
+        content = gzip.compress(json.dumps(transformData).encode('utf8'), mtime=0)
+        response = make_response(content)
+        response.headers['Content-length'] = len(content)
+        response.headers['Content-Encoding'] = 'gzip'
+        return response
     except requests.exceptions.RequestException as e:
         app.logger.error(f"HTTP request error: {str(e)}")
         return make_response(f"HTTP request error: {str(e)}", 500)
