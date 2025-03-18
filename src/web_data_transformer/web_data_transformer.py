@@ -28,8 +28,8 @@ os.makedirs(DEST_FOLDER, exist_ok=True)
 os.makedirs(DEST_DEFAULT_FOLDER, exist_ok=True)
 DATA_TRANSFORMER_PORT = os.environ["DATA_TRANSFORMER_PORT"]
 DATA_TRANSFORMER_URL = "http://datatransformer:"+DATA_TRANSFORMER_PORT
-API_GATEWAY_PORT= os.environ["API_GATEWAY_PORT"]
-API_GATEWAY_URL = "http://apigateway:"+API_GATEWAY_PORT
+DB_MANAGER_PORT = os.environ["DB_MANAGER_PORT"]
+DB_MANAGER_URL = "http://dbmanager:"+DB_MANAGER_PORT
 
 
 # Funzione per caricare uno schema specifico dalla caretella di default
@@ -73,11 +73,11 @@ def query():
             schema = queryPayload.get('schema', '')
             
             if schema == '':
-                URL = API_GATEWAY_URL + '/query'
+                URL = DB_MANAGER_URL + '/query'
             else:
-                URL = API_GATEWAY_URL + '/query?transform=' + schema
+                URL = DATA_TRANSFORMER_URL + '/queryTransformed'
             app.logger.info(f"Sending query request to {URL}")
-            response = requests.post(URL, json=queryPayload, stream=True)
+            response = requests.post(URL, json=queryPayload, params={"transform":schema}, stream=True)
             response.raise_for_status()
             content = response.content
             content = json.loads(content.decode('utf-8'))
