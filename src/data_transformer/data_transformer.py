@@ -454,6 +454,8 @@ def queryTransformed():
         URL = DB_MANAGER_URL + '/query'
         app.logger.info(f"Sending query to {URL}")
         x = requests.post(URL, json=msg, params={'unzip': 'true'})
+        if x.status_code == 404:
+            return make_response("", 404)
         x.raise_for_status()
         data = x.json()
         transformData = []

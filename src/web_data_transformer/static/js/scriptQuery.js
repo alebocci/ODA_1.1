@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('queryForm');
     form.addEventListener('submit', function(e) {
         e.preventDefault();
+        // azzero l'anteprima
+        document.getElementById('previewData').textContent = '';
+        document.getElementById('previewContainer').style.display = 'none';
         // Controllo che almeno uno dei campi sia compilato
         const start = document.getElementById('start').value;
         const stop = document.getElementById('stop').value;
@@ -11,6 +14,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const schema = document.getElementById('schema').value;
         if (!start && !stop && !topic && !generator_id) {
             document.getElementById('errorText').textContent = 'Errore: compilare almeno uno dei campi (start, stop, topic, generator_id).';
+            document.getElementById('errorMessage').style.display = 'flex';
+            return;
+        }
+        // Controllo del formato data per start e stop
+        const dateFormatRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+        if (start && !dateFormatRegex.test(start)) {
+            document.getElementById('errorText').textContent = 'Errore: il campo start deve essere nel formato YYYY-MM-DDTHH:MM:SSZ';
+            document.getElementById('errorMessage').style.display = 'flex';
+            return;
+        }
+        if (stop && !dateFormatRegex.test(stop)) {
+            document.getElementById('errorText').textContent = 'Errore: il campo stop deve essere nel formato YYYY-MM-DDTHH:MM:SSZ';
             document.getElementById('errorMessage').style.display = 'flex';
             return;
         }

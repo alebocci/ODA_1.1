@@ -70,27 +70,44 @@ def query():
             return render_template('query.html')
         else:
             queryPayload = request.get_json()
+            # Valido la richiesta
+            if not queryPayload:
+                return jsonify({'error': 'La richiesta non contiene dati JSON validi'}), 400    
             schema = queryPayload.get('schema', '')
-            
             if schema == '':
                 URL = DB_MANAGER_URL + '/query'
             else:
                 URL = DATA_TRANSFORMER_URL + '/queryTransformed'
             app.logger.info(f"Sending query request to {URL}")
-            response = requests.post(URL, json=queryPayload, params={"transform":schema}, stream=True)
-            response.raise_for_status()
+            try:
+                response = requests.post(URL, json=queryPayload, params={"transform":schema}, stream=True)
+                response.raise_for_status()
+            except requests.exceptions.ConnectionError:
+                return jsonify({'error': f"Impossibile connettersi al servizio. Verificare che il server {URL.split('/')[2]} sia in esecuzione"}), 503
+            except requests.exceptions.HTTPError as http_err:
+                if response.status_code == 404:
+                    return jsonify({'error': 'Nessun dato trovato per i parametri specificati'}), 404
+                else:
+                    return jsonify({'error': f"Errore HTTP {response.status_code}: {response.text}"}), response.status_code
             content = response.content
-            content = json.loads(content.decode('utf-8'))
+            # Gestisco la risposta vuota
+            if not content or content.strip() == b'':
+                return jsonify({'error': 'Nessun dato trovato per i parametri specificati'}), 404
+            # gestisco la decodifica della risposta
+            try:
+                content = json.loads(content.decode('utf-8'))
+            except json.JSONDecodeError:
+                return jsonify({'error': 'Impossibile decodificare la risposta JSON dal server'}), 500
             # estraggo un anteprima del contenuto
             app.logger.info("extracting preview")
-            preview = content[:5] if len(content) > 5 else content
+            preview = content[:1] if len(content) > 0 else []
             # stringa json
             jsonData = json.dumps(content).encode('utf-8')
-            # Comprimi con gzip
+            # Comprimo con gzip
             compressedData = io.BytesIO()
             with gzip.GzipFile(fileobj=compressedData, mode='w') as f:
                 f.write(jsonData)
-            # Converti in base64 per inviare al frontend
+            # Converto in base64 per inviare al frontend
             base64Data = base64.b64encode(compressedData.getvalue()).decode('utf-8')
             app.logger.info("Sending compressing data base64")
             return jsonify({
@@ -99,7 +116,8 @@ def query():
                 'file_extension': 'gzip'
             })
     except Exception as e:
-            return jsonify({'error': f"Errore durante l'inoltro della richiesta: {str(e)}"}), 500
+        app.logger.error(str(e))
+        return jsonify({'error': f"Errore durante l'elaborazione della richiesta: {str(e)}"}), 500
 
 
 # Endpoint per inoltrare la richiesta di visualizzazione dei mapping a data_transformer
