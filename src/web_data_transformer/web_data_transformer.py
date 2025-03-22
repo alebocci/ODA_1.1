@@ -96,6 +96,9 @@ def query():
             # gestisco la decodifica della risposta
             try:
                 content = json.loads(content.decode('utf-8'))
+                if content == []:
+                    app.logger.error("Nessuna funzione di mapping trovata per i dati della query inviata")
+                    return jsonify({'error': 'Nessuna funzione di mapping trovata per i dati della query inviata'}), 404
             except json.JSONDecodeError:
                 return jsonify({'error': 'Impossibile decodificare la risposta JSON dal server'}), 500
             # estraggo un anteprima del contenuto
