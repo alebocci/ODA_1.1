@@ -67,8 +67,6 @@ def generate_random_data():
     # creo il formato dei dati delo schema di input
     data ={
         "consumi": consumi,
-        "inizio": start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "fine": end_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "buildingId": building["id"],
         "buildingName": building["name"]
     }
