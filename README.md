@@ -1,12 +1,12 @@
-# ODA - Observable Data Access
+# ODA - Observable Data Access, Version 1.1
 
-Observable Data Access service developed within NEST Project, Task 8.6.2.
+Version upgrade of [Observable Data Access](https://github.com/di-unipi-socc/ODA) service developed within NEST Project, Task 8.6.2.
 
 ## Overview
 
-![ODA Architecture](docs/ODA.png)
+![ODA Architecture](docs/ODA1_1.png)
 
-The Observable Data Access (ODA) service is a microservice-based architecture that allows Data Generators to send data to the service and Data Consumers to query the data stored in the service. The service is composed of the following microservices:
+The Observable Data Access (ODA) V1.1 service is a microservice-based architecture that allows Data Generators to send data to the service and Data Consumers to query the data stored in the service. The service is composed of the following microservices:
 
 1. API Gateway: the entry point of the service. It provides the Kafka endpoint to Data Generators and Data Consumers and manages the registration of the topics. It also provides the query endpoint to Data Consumers.
 2. Database Manager: the microservice that manages the InfluxDB database. It stores the data sent by the Data Generators and provides the data to the Data Consumers.
@@ -14,8 +14,12 @@ The Observable Data Access (ODA) service is a microservice-based architecture th
 4. Kafka: the message broker - managed by Zookeeper - that allows Data Generators to stream data through ODA and Data Consumers to receive streamed data through ODA.
 5. Data Pump: the microservice that subscribes to the Kafka topics and sends the data to be stored to the Database Manager.
 6. Topic Manager: the microservice that manages the Kafka topics registered in ODA.
+7. Weg Data Transformer: a web page that allows the creation of mappings of data formats, managing mappings and performing queries.
+8. Data Transformer: the microservice that manages the mappings.
+9. MySQL: the relational database that stores mappings.
 
 The [detailed overview](/docs/ODA.pdf) is available in the `docs` folder.
+NOTE: V1.1 Coming soon.
 
 ## Prerequisites
 
