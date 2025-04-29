@@ -1,12 +1,18 @@
-FROM python:3.11-slim
-# imposto la workdir e ci copio tutti i file
+FROM alpine
+
+ARG WEB_DATA_TRANSFORMER_PORT
+ENV SERVER_PORT="0.0.0.0:$WEB_DATA_TRANSFORMER_PORT"
+
 WORKDIR /app
+
 COPY . .
-# Installo le dipendenze
+
+RUN apk add --update py3-pip
+
+RUN apk add --update py3-setuptools
+
 RUN pip3 install -r requirements.txt  --break-system-packages --no-cache-dir
-# espongo la porta all'esterno del container
-EXPOSE 50100 
-# setto la variabile d'ambiente per flask
-ENV FLASK_APP=web_data_transformer.py  
-# avvio l'app Flask
-CMD ["gunicorn", "--bind", "0.0.0.0:50100", "web_data_transformer:app"]
+
+EXPOSE $WEB_DATA_TRANSFORMER_PORT
+
+CMD gunicorn -k gevent --bind ${SERVER_PORT} web_data_transformer:app 
