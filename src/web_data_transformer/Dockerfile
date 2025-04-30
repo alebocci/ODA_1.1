@@ -15,4 +15,4 @@ RUN pip3 install -r requirements.txt  --break-system-packages --no-cache-dir
 
 EXPOSE $WEB_DATA_TRANSFORMER_PORT
 
-CMD ["gunicorn", "-k", "gevent", "--bind", "${SERVER_PORT}", "web_data_transformer:app"] 
+CMD ["sh", "-c", "gunicorn -k gevent --bind ${SERVER_PORT} web_data_transformer:app"]

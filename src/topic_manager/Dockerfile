@@ -15,4 +15,4 @@ RUN pip3 install -r requirements.txt  --break-system-packages --no-cache-dir
 
 EXPOSE $TOPIC_MANAGER_PORT
 
-CMD ["gunicorn", "-k", "gevent", "--bind", "${SERVER_PORT}", "topic_manager:app"]
+CMD ["sh", "-c", "gunicorn -k gevent --bind ${SERVER_PORT} topic_manager:app"]
