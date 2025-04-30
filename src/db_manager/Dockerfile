@@ -15,4 +15,4 @@ RUN pip3 install -r requirements.txt  --break-system-packages --no-cache-dir
 
 EXPOSE $DB_MANAGER_PORT
 
-CMD gunicorn -k gevent --bind ${SERVER_PORT} db_manager:app --workers 6
+CMD ["gunicorn", "-k", "gevent", "--bind", "${SERVER_PORT}", "db_manager:app", "--workers", "6"]
