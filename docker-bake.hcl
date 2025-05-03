@@ -25,6 +25,10 @@ target "topicmanager" {
     context = "src/topic_manager"
     dockerfile = "Dockerfile"
     tags = ["${_COMMON_NAME}topicmanager:${TAG}"]
+    platforms = [
+        "linux/amd64",
+        # "linux/arm64" actually not needed and impossible to build locally
+    ]
     output = [ "type=docker" ]
 }
 
@@ -32,6 +36,10 @@ target "datapump" {
     context = "src/data_pump"
     dockerfile = "Dockerfile"
     tags = ["${_COMMON_NAME}datapump:${TAG}"]
+    platforms = [
+        "linux/amd64",
+        # "linux/arm64" actually not needed and impossible to build locally
+    ]
     output = [ "type=docker" ]
 }
 
