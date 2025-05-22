@@ -53,13 +53,13 @@ target "apigateway" {
 target "web_data_transformer" {
     context = "src/web_data_transformer"
     dockerfile = "Dockerfile"
-    tags = ["${_COMMON_NAME}webdatatransformer:${TAG}"]
+    tags = ["${_COMMON_NAME}web_data_transformer:${TAG}"]
     output = [ "type=docker" ]
 }
 
 target "data_transformer" {
     context = "src/data_transformer"
     dockerfile = "Dockerfile"
-    tags = ["${_COMMON_NAME}datatransformer:${TAG}"]
+    tags = ["${_COMMON_NAME}data_transformer:${TAG}"]
     output = [ "type=docker" ]
 }
