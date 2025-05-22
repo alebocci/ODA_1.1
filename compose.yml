@@ -1,7 +1,5 @@
 name: oda
-
 services:
-
   zookeeper:
     container_name: zookeeper
     image: alebocci/odakafka
@@ -117,7 +115,7 @@ services:
     build:
       args:
         WEB_DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
-    image: oda-webdatatransformer:latest
+    image: oda-web_data_transformer:latest
     container_name: webdatatransformer
     restart: always
     ports:
@@ -134,7 +132,7 @@ services:
     build: 
       args:
         DATA_TRANSFORMER_PORT: ${data_transformer_port}
-    image: oda-datatransformer:latest
+    image: oda-data_transformer:latest
     container_name: datatransformer
     restart: always
     environment:
