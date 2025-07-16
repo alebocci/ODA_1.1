@@ -24,13 +24,14 @@ services:
     - zookeeper
     ports:
     - ${kafka_port}:9094
-    #restart: always
+    - ${kafka_port_static}:9095
+    restart: always
     environment:
       LOG_DIR: "/tmp/logs"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,OUTSIDE://0.0.0.0:9094
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://${kafka_address}:${kafka_port}
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,OUTSIDE1://0.0.0.0:9094,OUTSIDE2://0.0.0.0:9095
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE1://${kafka_address}:${kafka_port},OUTSIDE2://${kafka_address_static}:${kafka_port_static}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE1:PLAINTEXT,OUTSIDE2:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
 
   influxdb:
@@ -75,6 +76,9 @@ services:
     restart: always
     environment: 
       KAFKA_INTERNAL_PORT: ${kafka_internal_port}
+      RESTORE_TOPICS: ${restore_topics_from_file}
+    volumes:
+      - topiclist:/app/topiclist:rw
     depends_on:
       - kafka
       - dbmanager
@@ -89,7 +93,18 @@ services:
     depends_on:
       - kafka
       - dbmanager
-    
+  queryaggregator:
+    build: 
+      context: src/query_aggregator
+      args:
+        QUERY_AGGREGATOR_PORT: ${query_aggregator_port}
+    container_name: queryaggregator
+    restart: always
+    environment:
+      QUERY_AGGREGATOR_PORT: ${query_aggregator_port}
+      DB_MANAGER_PORT: ${db_manager_port}
+    depends_on:
+      - dbmanager    
   apigateway:
     build: 
       context: src/api_gateway
@@ -102,9 +117,12 @@ services:
     environment:
       API_GATEWAY_PORT: ${api_gateway_port}
       KAFKA_PORT: ${kafka_port}
+      KAFKA_PORT_STATIC: ${kafka_port_static}
       KAFKA_ADDRESS: ${kafka_address}
+      KAFKA_ADDRESS_STATIC: ${kafka_address_static}
       DB_MANAGER_PORT: ${db_manager_port}
       TOPIC_MANAGER_PORT: ${topic_manager_port}
+      QUERY_AGGREGATOR_PORT: ${query_aggregator_port}
       WEB_DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
       DATA_TRANSFORMER_PORT: ${data_transformer_port}
     depends_on:
@@ -112,7 +130,8 @@ services:
       - topicmanager
       - data_transformer
       - web_data_transformer
-
+      - queryaggregator
+      
   web_data_transformer:
     build:
       context: src/web_data_transformer
@@ -148,3 +167,4 @@ volumes:
   influxdbdata:
   influxdbconfig:
   mysqldata:
+  topiclist:
