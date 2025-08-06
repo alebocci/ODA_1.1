@@ -106,7 +106,7 @@ services:
       WEB_DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
       DATA_TRANSFORMER_PORT: ${data_transformer_port}
     depends_on:
-      - datapump
+      - dbmanager
       - topicmanager
       - data_transformer
       - web_data_transformer
