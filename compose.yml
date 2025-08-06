@@ -1,7 +1,6 @@
 name: oda
 
 services:
-
   zookeeper:
     container_name: zookeeper
     image: alebocci/odakafka
@@ -54,9 +53,9 @@ services:
     
   dbmanager:
     build: 
-      context: src/db_manager
       args:
         DB_MANAGER_PORT: ${db_manager_port}
+    image: oda-dbmanager:latest
     container_name: dbmanager
     restart: always
     env_file:
@@ -68,9 +67,9 @@ services:
 
   topicmanager:
     build:
-      context: src/topic_manager
       args:
         TOPIC_MANAGER_PORT: ${topic_manager_port}
+    image: oda-topicmanager:latest
     container_name: topicmanager
     restart: always
     environment: 
@@ -80,7 +79,7 @@ services:
       - dbmanager
 
   datapump:
-    build: src/data_pump
+    image: oda-datapump:latest
     container_name: datapump
     restart: always
     environment: 
@@ -91,10 +90,10 @@ services:
       - dbmanager
     
   apigateway:
-    build: 
-      context: src/api_gateway
+    build:
       args:
         API_GATEWAY_PORT: ${api_gateway_port}
+    image: oda-apigateway:latest
     container_name: apigateway
     ports:
       - ${api_gateway_port}:${api_gateway_port}
@@ -108,16 +107,16 @@ services:
       WEB_DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
       DATA_TRANSFORMER_PORT: ${data_transformer_port}
     depends_on:
-      - datapump
+      - dbmanager
       - topicmanager
       - data_transformer
       - web_data_transformer
 
   web_data_transformer:
     build:
-      context: src/web_data_transformer
       args:
         WEB_DATA_TRANSFORMER_PORT: ${web_data_transformer_port}
+    image: oda-web_data_transformer:latest
     container_name: webdatatransformer
     restart: always
     ports:
@@ -132,9 +131,9 @@ services:
 
   data_transformer:
     build: 
-      context: src/data_transformer
       args:
         DATA_TRANSFORMER_PORT: ${data_transformer_port}
+    image: oda-data_transformer:latest
     container_name: datatransformer
     restart: always
     environment:

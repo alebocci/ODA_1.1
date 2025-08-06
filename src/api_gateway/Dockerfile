@@ -15,4 +15,4 @@ RUN pip3 install -r requirements.txt  --break-system-packages --no-cache-dir
 
 EXPOSE $API_GATEWAY_PORT
 
-CMD gunicorn -k gevent --bind ${SERVER_PORT} api_gateway:app
+CMD ["sh", "-c", "gunicorn -k gevent --bind ${SERVER_PORT} api_gateway:app"]
