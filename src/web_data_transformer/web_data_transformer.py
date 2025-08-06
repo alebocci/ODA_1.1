@@ -33,6 +33,7 @@ DB_MANAGER_URL = "http://dbmanager:"+DB_MANAGER_PORT
 
 
 # Funzione per caricare uno schema specifico dalla caretella di default
+#TODO validare lo schema
 def loadSchema(schemaName):
     schemaPath = os.path.join(app.config['DEST_DEFAULT_FOLDER'], f"{schemaName}.json")
     if not os.path.exists(schemaPath):
@@ -689,3 +690,21 @@ def saveMappingFunction():
     except Exception as e:
         # Se c'è un errore restituisco un messaggio di errore
         return jsonify({'error': f"Errore durante il salvataggio della funzione di mapping"}), 500
+
+# endpoint per prendere i nomi degli schemi dal db
+@app.route('/getSchemaNames', methods=['GET'])
+def getSchemaNames():
+    try:
+        # Inoltra la richiesta al backend data_transformer
+        URL = DATA_TRANSFORMER_URL + '/getSchemaNames'
+        app.logger.info("Sending request to URL: " + URL)
+        response = requests.get(URL)
+        app.logger.info("Request sent to data_transformer")
+        # Se la richiesta è andata a buon fine, restituisci la risposta
+        if response.status_code == 200:
+            return jsonify(schema_names=response.json()), 200
+        else:
+            return jsonify({'error': f"Errore durante il recupero dei nomi degli schemi: {response.status_code}"}), response.status_code
+    except Exception as e:
+        # Se c'è un errore, restituisci un messaggio di errore
+        return jsonify({'error': f"Errore durante l'inoltro della richiesta: {str(e)}"}), 500
