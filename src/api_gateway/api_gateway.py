@@ -4,16 +4,11 @@ from requests.exceptions import HTTPError
 
 #CONFIGURATION
 DB_MANAGER_PORT= os.environ["DB_MANAGER_PORT"]
-QUERY_AGGREGATOR_PORT= os.environ["QUERY_AGGREGATOR_PORT"]
 KAFKA_PORT= os.environ["KAFKA_PORT"]
-KAFKA_PORT_STATIC= os.environ["KAFKA_PORT_STATIC"]
 KAFKA_ADDRESS= os.environ["KAFKA_ADDRESS"]
-KAFKA_ADDRESS_STATIC = os.environ["KAFKA_ADDRESS_STATIC"]
 
 DB_MANAGER_URL = "http://dbmanager:"+DB_MANAGER_PORT
-QUERY_AGGREGATOR_URL = "http://queryaggregator:"+QUERY_AGGREGATOR_PORT
 KAFKA_URL = KAFKA_ADDRESS+":"+KAFKA_PORT
-KAFKA_STATIC_URL = KAFKA_ADDRESS_STATIC+":"+KAFKA_PORT_STATIC
 
 TOPIC_MANAGER_PORT= os.environ["TOPIC_MANAGER_PORT"]
 TOPIC_MANAGER_URL = "http://topicmanager:"+TOPIC_MANAGER_PORT
@@ -42,49 +37,43 @@ Each record has the following structure:
     "topic": string
     "data": str
 '''
-@app.route("/query", methods=["POST"])
+@app.route("/query", methods=["POST"]) 
 def query():
     try:
         msg = request.get_json()
         if not msg:
             return make_response("Empty query", 404)
-
-        transform_param = request.args.get('transform')
-
-        if "aggregator" in msg:
-            url = f"{QUERY_AGGREGATOR_URL}/query"
-            return forward_query(url, msg)
-
-        elif transform_param:
-            url = f"{DATA_TRANSFORMER_URL}/queryTransformed"
-            app.logger.info(f"Sending transformed query to {url}")
-            return forward_query(url, msg, params={"transform": transform_param})
-
+        transformParameter = request.args.get('transform')
+        if transformParameter:
+            URL= DATA_TRANSFORMER_URL + '/queryTransformed'
+            app.logger.info(f"Sending query to {URL}")
+            app.logger.info(f"Query: {msg}")
+            x = requests.post(URL, json=msg, params={"transform":transformParameter}, stream=True)
+            x.raise_for_status()
+            logging.info("Query sent to Data Transformer service")
+            resp = make_response(x.raw.read(), x.status_code, x.headers.items())
+            return resp
         else:
-            url = f"{DB_MANAGER_URL}/query"
-            app.logger.info(f"Sending query to {url}")
-            return forward_query(url, msg)
-
+            URL= DB_MANAGER_URL + '/query'
+            app.logger.info(f"Sending query to {URL}")
+            app.logger.info(f"Query: {msg}")
+            x = requests.post(URL, json=msg, stream=True)
+            x.raise_for_status()
+            logging.info("Query sent to DB service")
+            resp = make_response(x.raw.read(), x.status_code, x.headers.items())
+            return resp
+        #return make_response(x.json(), 200)
     except HTTPError as e:
-        app.logger.error(f"HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}")
+        app.logger.error(f'HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}')
         return make_response(e.response.text, e.response.status_code)
     except Exception as e:
         app.logger.error(repr(e))
         return make_response(repr(e), 500)
 
-def forward_query(url, msg, params=None):
-    """Helper to send a POST request and forward the raw response."""
-    response = requests.post(url, json=msg, params=params, stream=True)
-    response.raise_for_status()
-    logging.info(f"Query sent successfully to {url}")
-    return make_response(response.raw.read(), response.status_code, response.headers.items())
-
 
 @app.route("/register/dc", methods=["GET"]) 
 def register_dc():
     try:
-        static_param = request.args.get('static', default=None, type=str)
-        static_param = static_param.lower() == 'true' if static_param else False
         URL= TOPIC_MANAGER_URL + '/topics'
         app.logger.info(f"Asking for topics to {URL}")
         x = requests.get(URL)
@@ -92,10 +81,7 @@ def register_dc():
         app.logger.info(f"Topics received: {x.content.decode('utf-8')}")
         resp = {}
         resp = json.loads(x.content.decode('utf-8'))
-        if static_param:
-            resp["KAFKA_ENDPOINT"]=KAFKA_STATIC_URL
-        else:
-            resp["KAFKA_ENDPOINT"]=KAFKA_URL
+        resp["KAFKA_ENDPOINT"]=KAFKA_URL
         return make_response(json.dumps(resp), 200)
     except HTTPError as e:
         app.logger.error(f'HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}')
@@ -103,11 +89,11 @@ def register_dc():
     except Exception as e:
         app.logger.error(repr(e))
         return make_response(repr(e), 500)
+
+
 @app.route("/register/dg", methods=["POST"]) 
 def register_dg():
     try:
-        static_param = request.args.get('static', default=None, type=str)
-        static_param = static_param.lower() == 'true' if static_param else False
         msg = request.get_json()
         if not msg:
             return make_response("Empty Registration", 400)
@@ -117,11 +103,7 @@ def register_dg():
         x = requests.post(URL, json=msg)
         x.raise_for_status()
         logging.info("Registration sent to K Admin")
-        if static_param:
-            URL_TO_SEND=KAFKA_STATIC_URL
-        else:
-            URL_TO_SEND=KAFKA_URL
-        return make_response(jsonify(KAFKA_ENDPOINT=URL_TO_SEND), 200)
+        return make_response(jsonify(KAFKA_ENDPOINT=KAFKA_URL), 200)
     except HTTPError as e:
         app.logger.error(f'HTTP error occurred: {e.response.url} - {e.response.status_code} - {e.response.text}')
         return make_response(e.response.text, e.response.status_code)
