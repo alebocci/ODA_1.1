@@ -6,4 +6,6 @@
 __pycache__/
 *.pyc
 src/data_transformer/provaFunzione.py
-*/scan/
+**/venv/
+**/env/
+**/test/
