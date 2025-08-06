@@ -1,5 +1,5 @@
 group "all" {
-  targets = ["dbmanager", "topicmanager", "datapump", "apigateway", "web_data_transformer", "data_transformer"]
+  targets = ["dbmanager", "topicmanager", "datapump", "apigateway", "web_data_transformer", "data_transformer", "query_aggregator"]
 }
 
 variable "_COMMON_NAME" {
