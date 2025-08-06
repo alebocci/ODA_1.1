@@ -63,3 +63,11 @@ target "data_transformer" {
     tags = ["${_COMMON_NAME}data_transformer:${TAG}"]
     output = [ "type=docker" ]
 }
+
+target "query_aggregator" {
+    context = "src/query_aggregator"
+    dockerfile = "Dockerfile"
+    tags = ["${_COMMON_NAME}query_aggregator:${TAG}"]
+    output = [ "type=docker" ]
+  
+}

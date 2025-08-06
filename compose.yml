@@ -88,6 +88,19 @@ services:
     depends_on:
       - kafka
       - dbmanager
+
+  queryaggregator:
+    build: 
+      args:
+        QUERY_AGGREGATOR_PORT: ${query_aggregator_port}
+    image: oda-queryaggregator:latest
+    container_name: queryaggregator
+    restart: always
+    environment:
+      QUERY_AGGREGATOR_PORT: ${query_aggregator_port}
+      DB_MANAGER_PORT: ${db_manager_port}
+    depends_on:
+      - dbmanager
     
   apigateway:
     build:
