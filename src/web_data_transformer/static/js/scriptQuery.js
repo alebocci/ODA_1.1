@@ -1,35 +1,6 @@
 let tempLink = null;
-let schemaNames = []
-
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('queryForm');
-    // carico dal db i nomi degli schemi
-    fetch('/getSchemaNames')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            // data è una lista di nomi di schemi
-            if (!Array.isArray(data.schema_names)) {
-                throw new Error('Formato dei dati non valido');
-            }
-            // Popolo il select con i nomi degli schemi, e.g. ["schema1", "schema2"]
-            schemaNames = data.schema_names;
-            //schemaNames = data.schema_
-            const schemaSelect = document.getElementById('schema');
-            // Aggiungo le opzioni al select
-            schemaNames.forEach(schema => {
-                const option = document.createElement('option');
-                option.value = schema;
-                option.textContent = schema;
-                schemaSelect.appendChild(option);
-            });
-        })
-        .catch(error => {
-            document.getElementById('errorText').textContent = 'Errore: ' + error.message;
-            document.getElementById('errorMessage').style.display = 'flex';
-        });
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         // azzero l'anteprima

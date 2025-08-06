@@ -40,13 +40,7 @@ def writeDB(msg):
     topic = msg["topic"]
     data = msg["data"]
     
-    try:
-        # Try to parse with milliseconds
-        dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%fZ")
-    except ValueError:
-        # If that fails, try parsing without milliseconds
-        dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
-    
+    dt = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ")
     unixtimestamp = int(dt.timestamp())
     id = str(uuid.uuid4())
 
@@ -112,7 +106,7 @@ def buildQuery(query,start,stop,topic,generator_id):
     else:
         start = "-10"
     if stop:
-        stop = datetime.strptime(stop, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        stop = str(sys.maxsize)
     else:
         stop = datetime.strftime(datetime.now(),"%Y-%m-%dT%H:%M:%S.000Z")
     range = f'range(start: {start}, stop: {stop})'
@@ -132,6 +126,6 @@ def extractResults(result):
     results = []
     for table in result:
         for record in table.records:
-            time = record.get_time().strftime("%Y-%m-%dT%H:%M:%SZ")
+            time = record.get_time().strftime("%Y-%m-%dT%H:%M:%S.000Z")
             results.append({"timestamp":time,"data":record.get_value(),"topic":record.values["topic"],"generator_id":record.values["generator_id"]})
     return results

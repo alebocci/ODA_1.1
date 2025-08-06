@@ -79,10 +79,8 @@
                         <select class="form-control" id="schema" name="schema">
                             <option value="">Nessuno</option>
                             <option value="POLIMI">POLIMI</option>
-                            <option value="SCP">UrbanDataset-BuildingElectricConsumption-2.0</option>
-                            {% for schema in schemas %}
-                                <option value="{{ schema }}">{{ schema }}</option>
-                            {% endfor %}
+                            <option value="SCP">SCP</option>
+                            <!-- Aggiungi altri schemi se necessario -->
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary" onclick="resetLink()">Invia Query</button>

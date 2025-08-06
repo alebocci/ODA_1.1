@@ -17,7 +17,6 @@ The Observable Data Access (ODA) V1.1 service is a microservice-based architectu
 7. Weg Data Transformer: a web page that allows the creation of mappings of data formats, managing mappings and performing queries.
 8. Data Transformer: the microservice that manages the mappings.
 9. MySQL: the relational database that stores mappings.
-10. Data Aggregator: the microservice that manages the aggregation of the data stored in ODA. It allows querying the data stored in ODA and receiving aggregated results.
 
 The [detailed overview](/docs/ODA.pdf) is available in the `docs` folder.
 NOTE: V1.1 Coming soon.

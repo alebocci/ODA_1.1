@@ -110,8 +110,7 @@ document.getElementById('uploadDestSchemaFile').onsubmit = function (event) {
                 destJsonStructure = data.jsonStructure;
                 showModal("Formato schema di destinazione caricato", JSON.stringify(destJsonStructure, null, 2));
                 const editor = document.getElementById('destJsonStructure');
-                const jsonStructure = convertSchemaToJsonShape(destJsonStructure);
-                editor.innerHTML = generateDestDroppableCardFILE(jsonStructure);
+                editor.innerHTML = generateDestDroppableCardFILE(destJsonStructure);
                 document.getElementById('destJsonEditor').style.display = 'block';
                 document.getElementById('destJsonEditor').classList.remove('hidden');
             }
@@ -486,90 +485,86 @@ function generateTimeZoneOptions() {
 }
 
 
-function convertSchemaToJsonShape(schema) {
-    if (!schema || typeof schema !== 'object') return null;
-
-    switch (schema.type) {
-        case 'object': {
-            const obj = {};
-            if (schema.properties) {
-                for (const key in schema.properties) {
-                    obj[key] = convertSchemaToJsonShape(schema.properties[key]);
-                }
-            }
-            if (schema.patternProperties) {
-                for (const pattern in schema.patternProperties) {
-                    obj["__any_key__"] = convertSchemaToJsonShape(schema.patternProperties[pattern]);
-                }
-            }
-            return obj;
-        }
-
-        case 'array': {
-            if (schema.items) {
-                return [convertSchemaToJsonShape(schema.items)];
-            }
-            return [];
-        }
-
-        default:
-            return null;
-    }
-}
-
-
-
 // Funzione per generare il codice necessario per creare le card droppabili dei campi per un FILE generico
-function generateDestDroppableCardFILE(destJsonStructure, parentKey = '', isRoot = true) {
+function generateDestDroppableCardFILE(destJsonStructure, parentKey = '', isRoot=true) {
     let html = '';
-
-    if (isRoot) {
-        html += `
+    if(isRoot) {
+        html +=  `
             <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-data">
                 <div class="card-header text-white">
-                    <p class="card-title">data</p>
+                    <p class="card-title">data {</p>
                 </div>
                 <div class="card-body">
                     ${generateDestDroppableCardFILE(destJsonStructure, parentKey, false)}
                 </div>
+                <div class="object-footer text-start key-text fw-bold">}</div>
             </div>
-        `;
-
-        for (let key of alwaysPresent) {
-            html += `
-                <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
-                    <div class="card-header text-white">
-                        <p class="card-title">${key}</p>
-                    </div>
-                    <div class="card-body">
-                        <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                        ${(key === 'generator_id' || key === 'topic') ? `<button class="btn btn-primary" onclick="showMissingFieldsModal(['${key}'])">+</button>` : ''}
-                    </div>
-                </div>
             `;
+        for(let key of alwaysPresent){
+            html += `
+                    <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${key}">
+                        <div class="card-header text-white">
+                            <p class="card-title">${key}</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="dropzone" id="dropzone-${key}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                            ${(key === 'generator_id' || key === 'topic') ? `<button class="btn btn-primary" id="buttonAdd" onclick="showMissingFieldsModal(['${key}'])">+</button>` : ''}
+                        </div>
+                    </div>
+                `;
         }
-
+        
         return html;
     }
-
+    
     for (let key in destJsonStructure) {
-        //const displayKey = key === '__any_key__' ? '&lt;any key&gt;' : key;
-        const currentKey = parentKey ? `${parentKey}.${key}` : key;
-        const value = destJsonStructure[key];
+        let currentKey = parentKey ? `${parentKey}.${key}` : key;
+        let value = destJsonStructure[key];
 
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        if (Array.isArray(value)) {
+            // Genera una card per l'array
             html += `
                 <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${currentKey}">
                     <div class="card-header text-white">
-                        <div class="card-title d-flex align-items-center">
-                            <div class="dropzone flex-grow-1 p-1 text-dark bg-white rounded"
-                                 id="dropzone-${currentKey}"
-                                 ondrop="drop(event)"
-                                 ondragover="allowDrop(event)">
-                                " "
+                        <p class="card-title">${key} [</p>
+                    </div>
+                    <div class="card-body">
+            `;
+
+            // Itera sugli elementi dell'array
+            value.forEach((item) => {
+                const arrayItemKey = `${currentKey}`;
+
+                if (typeof item === 'object' && item !== null) {
+                    // Ricorsione per gli oggetti all'interno dell'array
+                    html += generateDestDroppableCardFILE(item, arrayItemKey, false);
+                } else {
+                    // Genera una card per i valori primitivi
+                    html += `
+                        <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${arrayItemKey}">
+                            <div class="card-header text-white">
+                                <p class="card-title">${item}</p>
                             </div>
-                            <span class="ms-2">{</span>
+                            <div class="card-body">
+                                <div class="dropzone" id="dropzone-${arrayItemKey}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                            </div>
                         </div>
+                    `;
+                }
+            });
+
+            // Chiude la card dell'array
+            html += `
+                    </div>
+                    <div class="array-footer text-start key-text fw-bold">]</div>
+                </div>
+            `;
+        } else if (typeof value === 'object' && value !== null) {
+            // Ricorsione per oggetti annidati
+            html += `
+                <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${currentKey}">
+                    <div class="card-header text-white">
+                        <p class="card-title">${key} {</p>
                     </div>
                     <div class="card-body">
                         ${generateDestDroppableCardFILE(value, currentKey, false)}
@@ -578,22 +573,20 @@ function generateDestDroppableCardFILE(destJsonStructure, parentKey = '', isRoot
                 </div>
             `;
         } else {
+            // Genera una card per i valori primitivi
             html += `
                 <div class="dest-card mb-3 p-2 border rounded shadow-sm" id="dest-card-${currentKey}">
                     <div class="card-header text-white">
-                        <p class="card-title">${displayKey}</p>
+                        <p class="card-title">${key}</p>
                     </div>
                     <div class="card-body">
                         <div class="dropzone" id="dropzone-${currentKey}" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                    </div>
-                </div>
             `;
+            html += `</div></div>`;
         }
     }
-
     return html;
 }
-
 
 
 // Permette di trascinare sopra una zona
