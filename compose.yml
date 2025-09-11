@@ -93,7 +93,7 @@ services:
     build: 
       args:
         QUERY_AGGREGATOR_PORT: ${query_aggregator_port}
-    image: oda-queryaggregator:latest
+    image: oda-query_aggregator:latest
     container_name: queryaggregator
     restart: always
     environment:
