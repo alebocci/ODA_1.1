@@ -6,22 +6,19 @@ services:
     image: oda-kafka:latest
     command: [
         "sh", "-c",
-        "bin/zookeeper-server-start.sh /opt/kafka/config/zookeeper.properties"
+        "bin/zookeeper-server-start.sh config/zookeeper.properties"
       ]
     restart: always
     environment:
       LOG_DIR: /tmp/logs
-    volumes:
-      - ./init/zookeeper.properties:/opt/kafka/config/zookeeper.properties:ro
-      - zookeeper_data:/var/lib/zookeeper/data
-      - zookeeper_log:/var/lib/zookeeper/log
 
   kafka:
     container_name: kafka
     image: oda-kafka:latest
     command: [
       "sh", "-c",
-      "bin/kafka-server-start.sh /opt/kafka/config/server.properties
+      "bin/kafka-server-start.sh config/server.properties
+      --override auto.create.topics.enable=false
       --override listeners=$${KAFKA_LISTENERS} 
       --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} 
       --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT} 
@@ -32,16 +29,15 @@ services:
     - zookeeper
     ports:
     - ${kafka_port}:9094
+    - ${kafka_port_static}:9095
     restart: always
     environment:
+      LOG_DIR: "/tmp/logs"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,OUTSIDE://0.0.0.0:9094
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://${kafka_address}:${kafka_port}
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-    volumes:
-      - ./init/server.properties:/opt/kafka/config/server.properties:ro
-      - kafka_data:/var/lib/kafka/data
 
   influxdb:
     image: influxdb:2.7
@@ -85,6 +81,9 @@ services:
     restart: always
     environment: 
       KAFKA_INTERNAL_PORT: ${kafka_internal_port}
+      RESTORE_TOPICS: ${restore_topics_from_file}
+    volumes:
+      - topiclist:/app/topiclist:rw
     depends_on:
       - kafka
       - dbmanager
@@ -171,6 +170,4 @@ volumes:
   influxdbdata:
   influxdbconfig:
   mysqldata:
-  kafka_data:
-  zookeeper_data:
-  zookeeper_log:  
+  topiclist:
